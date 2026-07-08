@@ -29,6 +29,12 @@ MODEL=Qwen/Qwen3-32B-Instruct MAX_MODEL_LEN=4096 GPU_MEMORY_UTILIZATION=0.90 bas
 bash scripts/run_sample_8gpu_vllm.sh
 ```
 
+运行过程中主终端会显示总进度，例如：
+
+```text
+2026-07-08 12:00:00 progress: 125/500 (25%), running shards: 8/8
+```
+
 调小或调大并发：
 
 ```bash
@@ -36,10 +42,22 @@ WORKERS_PER_SHARD=2 bash scripts/run_sample_8gpu_vllm.sh
 WORKERS_PER_SHARD=8 bash scripts/run_sample_8gpu_vllm.sh
 ```
 
+调整进度刷新间隔，单位是秒：
+
+```bash
+PROGRESS_INTERVAL=10 bash scripts/run_sample_8gpu_vllm.sh
+```
+
 ## 3. 正式全量运行
 
 ```bash
 bash scripts/run_full_8gpu_vllm.sh
+```
+
+正式运行也会显示总进度：
+
+```bash
+PROGRESS_INTERVAL=30 bash scripts/run_full_8gpu_vllm.sh
 ```
 
 最终结果：

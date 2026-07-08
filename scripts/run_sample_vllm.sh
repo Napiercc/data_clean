@@ -8,7 +8,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-output/qwen32b_sample}"
 SAMPLE_PER_PLATFORM="${SAMPLE_PER_PLATFORM:-100}"
 WORKERS="${WORKERS:-4}"
 
-python llm_post_filter.py \
+python -u llm_post_filter.py \
   --base_url "$BASE_URL" \
   --model "$MODEL" \
   --input "$INPUT" \

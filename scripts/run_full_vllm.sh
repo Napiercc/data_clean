@@ -7,7 +7,7 @@ INPUT="${INPUT:-input/post_relevance_filtered.csv}"
 OUTPUT_DIR="${OUTPUT_DIR:-output/qwen32b_full}"
 WORKERS="${WORKERS:-4}"
 
-python llm_post_filter.py \
+python -u llm_post_filter.py \
   --base_url "$BASE_URL" \
   --model "$MODEL" \
   --input "$INPUT" \

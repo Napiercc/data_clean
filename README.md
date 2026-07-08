@@ -47,6 +47,18 @@ bash scripts/run_sample_8gpu_vllm.sh
 bash scripts/run_full_8gpu_vllm.sh
 ```
 
+运行过程中主终端会定时显示总进度：
+
+```text
+2026-07-08 12:00:00 progress: 1250/29019 (4%), running shards: 8/8
+```
+
+默认每 30 秒刷新一次，可以用 `PROGRESS_INTERVAL` 调整：
+
+```bash
+PROGRESS_INTERVAL=10 bash scripts/run_full_8gpu_vllm.sh
+```
+
 最终合并结果会写到：
 
 ```text

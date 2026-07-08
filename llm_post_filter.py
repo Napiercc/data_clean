@@ -590,6 +590,8 @@ def run_rows(todo: List[Dict[str, str]], jsonl_path: Path, args: argparse.Namesp
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
     args = parse_args()
     input_path = Path(args.input)
     output_dir = Path(args.output_dir)
