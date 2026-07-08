@@ -42,7 +42,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 DEFAULT_INPUT = Path("input/post_relevance_filtered.csv")
 DEFAULT_OUTPUT_DIR = Path("output/qwen32b_full")
 
-DEFAULT_MODEL = "Qwen/Qwen3-32B-Instruct"
+DEFAULT_MODEL = "../models"
 KEEP_TOPIC_RELEVANCE = {"strongly_relevant", "relevant"}
 KEEP_DISCUSSION = {"high", "medium"}
 
@@ -148,7 +148,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run LLM second-stage filtering on posts-only relevance rows.")
     parser.add_argument("--input", default=str(DEFAULT_INPUT), help="Input post_relevance_filtered.csv path.")
     parser.add_argument("--output_dir", default=str(DEFAULT_OUTPUT_DIR), help="Directory for LLM refined outputs.")
-    parser.add_argument("--model", default=DEFAULT_MODEL, help="Model name served by vLLM. Default: Qwen/Qwen3-32B-Instruct.")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="Model name served by vLLM. Default: ../models.")
     parser.add_argument(
         "--base_url",
         default="http://localhost:8000/v1",

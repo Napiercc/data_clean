@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL="${MODEL:-Qwen/Qwen3-32B-Instruct}"
+MODEL="${MODEL:-../models}"
 INPUT="${INPUT:-input/post_relevance_filtered.csv}"
 RUN_DIR="${RUN_DIR:-output/qwen32b_8gpu}"
 BASE_PORT="${BASE_PORT:-8000}"

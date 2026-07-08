@@ -1,6 +1,18 @@
 # 8GPU vLLM Commands
 
-所有命令都在项目根目录执行。
+所有命令都在项目根目录 `data_clean/` 下执行。默认模型路径是 `../models`。
+
+要求目录结构：
+
+```text
+workspace/
+├── data_clean/
+└── models/
+    ├── config.json
+    ├── tokenizer.json
+    ├── model-*.safetensors
+    └── ...
+```
 
 ## 1. 启动 8 个 vLLM 服务
 
@@ -8,19 +20,14 @@
 bash scripts/start_vllm_8gpu_qwen32b.sh
 ```
 
-默认会使用：
+默认配置：
 
 ```text
-MODEL=Qwen/Qwen3-32B-Instruct
+MODEL=../models
 GPU=0..7
 PORT=8000..8007
 MAX_MODEL_LEN=4096
-```
-
-如果要调参数：
-
-```bash
-MODEL=Qwen/Qwen3-32B-Instruct MAX_MODEL_LEN=4096 GPU_MEMORY_UTILIZATION=0.90 bash scripts/start_vllm_8gpu_qwen32b.sh
+GPU_MEMORY_UTILIZATION=0.90
 ```
 
 ## 2. 小样本试跑
@@ -29,13 +36,13 @@ MODEL=Qwen/Qwen3-32B-Instruct MAX_MODEL_LEN=4096 GPU_MEMORY_UTILIZATION=0.90 bas
 bash scripts/run_sample_8gpu_vllm.sh
 ```
 
-运行过程中主终端会显示总进度，例如：
+运行过程中会显示总进度：
 
 ```text
 2026-07-08 12:00:00 progress: 125/500 (25%), running shards: 8/8
 ```
 
-调小或调大并发：
+调整并发：
 
 ```bash
 WORKERS_PER_SHARD=2 bash scripts/run_sample_8gpu_vllm.sh
@@ -54,10 +61,10 @@ PROGRESS_INTERVAL=10 bash scripts/run_sample_8gpu_vllm.sh
 bash scripts/run_full_8gpu_vllm.sh
 ```
 
-正式运行也会显示总进度：
+如果要更频繁显示进度：
 
 ```bash
-PROGRESS_INTERVAL=30 bash scripts/run_full_8gpu_vllm.sh
+PROGRESS_INTERVAL=10 bash scripts/run_full_8gpu_vllm.sh
 ```
 
 最终结果：
@@ -80,13 +87,4 @@ bash scripts/run_full_8gpu_vllm.sh
 
 ```bash
 bash scripts/stop_vllm_8gpu.sh
-```
-
-## 6. 单 GPU 调试
-
-只在调试时使用：
-
-```bash
-bash scripts/start_vllm_qwen32b.sh
-bash scripts/run_sample_vllm.sh
 ```
