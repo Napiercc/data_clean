@@ -1,6 +1,6 @@
 # Server LLM Post Filter
 
-这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本只保留 8GPU vLLM 运行方式，默认模型路径是 `../models`。
+这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本只保留 8GPU vLLM 运行方式，默认模型路径是 `../models/Qwen3-32B`。
 
 服务器目录结构应为：
 
@@ -8,10 +8,11 @@
 workspace/
 ├── data_clean/
 └── models/
-    ├── config.json
-    ├── tokenizer.json
-    ├── model-*.safetensors
-    └── ...
+    └── Qwen3-32B/
+        ├── config.json
+        ├── tokenizer.json
+        ├── model-*.safetensors
+        └── ...
 ```
 
 筛选目标：

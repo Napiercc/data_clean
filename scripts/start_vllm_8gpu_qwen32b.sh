@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL="${MODEL:-../models}"
+MODEL="${MODEL:-../models/Qwen3-32B}"
 HOST="${HOST:-0.0.0.0}"
 BASE_PORT="${BASE_PORT:-8000}"
 NUM_GPUS="${NUM_GPUS:-8}"

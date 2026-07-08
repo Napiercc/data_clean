@@ -1,6 +1,6 @@
 # 8GPU vLLM Commands
 
-所有命令都在项目根目录 `data_clean/` 下执行。默认模型路径是 `../models`。
+所有命令都在项目根目录 `data_clean/` 下执行。默认模型路径是 `../models/Qwen3-32B`。
 
 要求目录结构：
 
@@ -8,10 +8,11 @@
 workspace/
 ├── data_clean/
 └── models/
-    ├── config.json
-    ├── tokenizer.json
-    ├── model-*.safetensors
-    └── ...
+    └── Qwen3-32B/
+        ├── config.json
+        ├── tokenizer.json
+        ├── model-*.safetensors
+        └── ...
 ```
 
 ## 1. 启动 8 个 vLLM 服务
@@ -23,7 +24,7 @@ bash scripts/start_vllm_8gpu_qwen32b.sh
 默认配置：
 
 ```text
-MODEL=../models
+MODEL=../models/Qwen3-32B
 GPU=0..7
 PORT=8000..8007
 MAX_MODEL_LEN=4096
