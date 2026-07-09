@@ -1,6 +1,6 @@
 # Server LLM Post Filter
 
-这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本只保留 8GPU vLLM 运行方式，默认模型路径是 `../models/Qwen3-32B`。
+这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本默认使用 8GPU vLLM tensor-parallel 分组运行方式，默认模型路径是 `../models/Qwen3-32B`。
 
 服务器目录结构应为：
 
@@ -33,7 +33,7 @@ AND discussion_potential in high / medium
 
 - `llm_post_filter.py`：唯一 Python 主程序，负责 shard 推理、并发请求、结果汇总、8 shard 合并。
 - `input/post_relevance_filtered.csv`：规则筛选后的 posts-only 输入数据。
-- `scripts/start_vllm_8gpu_qwen32b.sh`：启动 8 个 vLLM 服务，每张 GPU 一个服务，端口默认 `8000-8007`。
+- `scripts/start_vllm_8gpu_qwen32b.sh`：默认启动 2 个 TP4 vLLM 服务，GPU `0,1,2,3` 使用端口 `8000`，GPU `4,5,6,7` 使用端口 `8001`。
 - `scripts/run_sample_8gpu_vllm.sh`：8GPU 小样本试跑。
 - `scripts/run_full_8gpu_vllm.sh`：8GPU 正式全量运行。
 - `scripts/stop_vllm_8gpu.sh`：停止 8 个 vLLM 服务。
@@ -47,7 +47,7 @@ AND discussion_potential in high / medium
 cd data_clean
 ```
 
-启动 8 个 vLLM 服务：
+启动 2 个 TP4 vLLM 服务：
 
 ```bash
 bash scripts/start_vllm_8gpu_qwen32b.sh
@@ -114,4 +114,6 @@ output/qwen32b_8gpu/merged/llm_post_relevance_filtered.csv
 
 所有运行脚本都启用了 `--resume`，中断后可以直接重新运行对应命令续跑。默认只跳过已经成功的行；之前写入了 `llm_error` 的失败行会在下一次运行时自动重试。
 
-运行脚本会在开始前检查 `8000-8007` 的 `/v1/models` 是否可用。如果任一 vLLM 服务未就绪，脚本会直接退出，不会把整批请求写成失败结果。正式脚本和小样本脚本也启用了失败保护：如果运行结束后仍存在 `llm_error`，脚本会返回非零退出码，修复服务后重新运行同一命令即可重试失败行。
+运行脚本会在开始前检查默认 endpoint `8000-8001` 的 `/v1/models` 是否可用。如果任一 vLLM 服务未就绪，脚本会直接退出，不会把整批请求写成失败结果。正式脚本和小样本脚本也启用了失败保护：如果运行结束后仍存在 `llm_error`，脚本会返回非零退出码，修复服务后重新运行同一命令即可重试失败行。
+
+默认仍保留 `NUM_SHARDS=8`，但会把 8 个数据 shard 轮询发送到 2 个 TP4 endpoint。这样可以复用旧输出中已经成功的 shard 结果，只重试失败行。

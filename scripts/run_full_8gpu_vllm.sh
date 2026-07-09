@@ -5,8 +5,11 @@ MODEL="${MODEL:-../models/Qwen3-32B}"
 INPUT="${INPUT:-input/post_relevance_filtered.csv}"
 RUN_DIR="${RUN_DIR:-output/qwen32b_8gpu}"
 BASE_PORT="${BASE_PORT:-8000}"
+GPU_GROUPS="${GPU_GROUPS:-0,1,2,3 4,5,6,7}"
 NUM_SHARDS="${NUM_SHARDS:-8}"
-WORKERS_PER_SHARD="${WORKERS_PER_SHARD:-2}"
+read -r -a endpoint_groups <<< "$GPU_GROUPS"
+NUM_ENDPOINTS="${NUM_ENDPOINTS:-${#endpoint_groups[@]}}"
+WORKERS_PER_SHARD="${WORKERS_PER_SHARD:-1}"
 PROGRESS_INTERVAL="${PROGRESS_INTERVAL:-30}"
 
 mkdir -p "${RUN_DIR}/logs"
@@ -48,10 +51,10 @@ PY
 }
 
 check_api_servers() {
-  local shard
+  local endpoint
   local port
-  for shard in $(seq 0 $((NUM_SHARDS - 1))); do
-    port=$((BASE_PORT + shard))
+  for endpoint in $(seq 0 $((NUM_ENDPOINTS - 1))); do
+    port=$((BASE_PORT + endpoint))
     if ! python - "$port" <<'PY' >/dev/null 2>&1
 import sys
 import urllib.request
@@ -103,10 +106,11 @@ check_api_servers
 
 pids=()
 for shard in $(seq 0 $((NUM_SHARDS - 1))); do
-  port=$((BASE_PORT + shard))
+  endpoint=$((shard % NUM_ENDPOINTS))
+  port=$((BASE_PORT + endpoint))
   shard_dir="${RUN_DIR}/shard_${shard}"
   log_file="${RUN_DIR}/logs/shard_${shard}.log"
-  echo "Starting shard ${shard}/${NUM_SHARDS} on port ${port}; log: ${log_file}"
+  echo "Starting shard ${shard}/${NUM_SHARDS} on endpoint ${endpoint}/${NUM_ENDPOINTS} port ${port}; log: ${log_file}"
   python -u llm_post_filter.py \
     --base_url "http://127.0.0.1:${port}/v1" \
     --model "$MODEL" \
