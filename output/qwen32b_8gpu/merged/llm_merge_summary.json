@@ -1,0 +1,14 @@
+{
+  "merged_rows": 29019,
+  "input_files": [
+    "output/qwen32b_8gpu/shard_0/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_1/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_2/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_3/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_4/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_5/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_6/llm_post_relevance_pairs.jsonl",
+    "output/qwen32b_8gpu/shard_7/llm_post_relevance_pairs.jsonl"
+  ],
+  "merged_at": "2026-07-09T08:47:52"
+}

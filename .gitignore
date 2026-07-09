@@ -1,6 +1,6 @@
 ﻿__pycache__/
 *.pyc
-output/
+output/qwen32b_8gpu/logs/
 *.log
 .env
 logs/

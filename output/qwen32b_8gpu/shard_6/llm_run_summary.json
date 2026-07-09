@@ -1,0 +1,37 @@
+{
+  "processed_rows": 3627,
+  "kept_rows": 1335,
+  "removed_rows": 2292,
+  "review_rows": 272,
+  "topic_relevance_counts": {
+    "": 212,
+    "strongly_relevant": 2449,
+    "relevant": 704,
+    "weak_keyword_match": 236,
+    "insufficient_context": 26
+  },
+  "stance_label_counts": {
+    "": 212,
+    "oppose": 555,
+    "neutral_or_factual": 2306,
+    "support": 520,
+    "mixed_or_complex": 3,
+    "unclear": 31
+  },
+  "discussion_potential_counts": {
+    "": 212,
+    "high": 1071,
+    "medium": 1475,
+    "low": 869
+  },
+  "platform_counts": {
+    "Facebook": 37,
+    "Instagram": 154,
+    "Reddit": 21,
+    "X": 874,
+    "YouTube": 2541
+  },
+  "total_input_tokens": 1985530,
+  "total_output_tokens": 773790,
+  "total_tokens": 2759320
+}

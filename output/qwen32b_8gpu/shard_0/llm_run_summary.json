@@ -1,0 +1,25 @@
+{
+  "processed_rows": 3628,
+  "kept_rows": 0,
+  "removed_rows": 3628,
+  "review_rows": 3628,
+  "topic_relevance_counts": {
+    "": 3628
+  },
+  "stance_label_counts": {
+    "": 3628
+  },
+  "discussion_potential_counts": {
+    "": 3628
+  },
+  "platform_counts": {
+    "Facebook": 38,
+    "Instagram": 154,
+    "Reddit": 21,
+    "X": 873,
+    "YouTube": 2542
+  },
+  "total_input_tokens": 0,
+  "total_output_tokens": 0,
+  "total_tokens": 0
+}

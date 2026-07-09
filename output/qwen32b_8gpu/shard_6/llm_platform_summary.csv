@@ -1,0 +1,6 @@
+﻿platform,row_count,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
+YouTube,2541,714,0.281,715,0.2814,1746,0.6871,1653,562,159,0,15
+X,874,522,0.5973,522,0.5973,657,0.7517,642,124,66,0,9
+Instagram,154,83,0.539,83,0.539,118,0.7662,130,15,3,0,2
+Facebook,37,10,0.2703,10,0.2703,15,0.4054,13,2,1,0,0
+Reddit,21,6,0.2857,6,0.2857,10,0.4762,11,1,7,0,0

@@ -1,0 +1,6 @@
+﻿platform,row_count,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
+Facebook,38,0,0.0,0,0.0,0,0.0,0,0,0,0,0
+Instagram,154,0,0.0,0,0.0,0,0.0,0,0,0,0,0
+Reddit,21,0,0.0,0,0.0,0,0.0,0,0,0,0,0
+X,873,0,0.0,0,0.0,0,0.0,0,0,0,0,0
+YouTube,2542,0,0.0,0,0.0,0,0.0,0,0,0,0,0
