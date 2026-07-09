@@ -21,17 +21,17 @@ workspace/
 bash scripts/start_vllm_8gpu_qwen32b.sh
 ```
 
-默认启动 2 个 TP4 服务：
+默认启动 1 个 TP4 服务，使用最后 4 张卡：
 
 ```text
 MODEL=../models/Qwen3-32B
-GPU_GROUPS="0,1,2,3 4,5,6,7"
-PORT=8000..8001
-TENSOR_PARALLEL_SIZE=4 per service
+GPU_GROUPS="4,5,6,7"
+PORT=8000
+TENSOR_PARALLEL_SIZE=4
 MAX_MODEL_LEN=4096
 GPU_MEMORY_UTILIZATION=0.85
 NUM_SHARDS=8
-NUM_ENDPOINTS=2  # 默认由 GPU_GROUPS 推导，可手动覆盖
+NUM_ENDPOINTS=1  # 默认由 GPU_GROUPS 推导，可手动覆盖
 WORKERS_PER_SHARD=1
 ```
 
@@ -88,7 +88,7 @@ bash scripts/run_full_8gpu_vllm.sh
 每个 shard 都启用了 `--resume`，已经写入 JSONL 的行会跳过。
 注意：默认只跳过成功行，之前有 `llm_error` 的失败行会自动重试。如果任一 endpoint 的 vLLM 服务未就绪，脚本会在开始前退出；如果运行后仍有错误行，脚本会返回失败状态，修好服务后重新运行同一个命令即可。
 
-默认仍使用 8 个数据 shard，但会轮询发送到 2 个 TP4 endpoint，所以可以继续复用旧输出里已经成功的 shard 结果。
+默认仍使用 8 个数据 shard，但都会发送到 GPU 4-7 上的同一个 endpoint，所以可以继续复用旧输出里已经成功的 shard 结果。
 
 如果要改成 1 个 TP8 服务，可以这样启动和运行：
 
