@@ -28,7 +28,8 @@ MODEL=../models/Qwen3-32B
 GPU=0..7
 PORT=8000..8007
 MAX_MODEL_LEN=4096
-GPU_MEMORY_UTILIZATION=0.90
+GPU_MEMORY_UTILIZATION=0.85
+WORKERS_PER_SHARD=2
 ```
 
 ## 2. 小样本试跑
@@ -40,7 +41,7 @@ bash scripts/run_sample_8gpu_vllm.sh
 运行过程中会显示总进度：
 
 ```text
-2026-07-08 12:00:00 progress: 125/500 (25%), running shards: 8/8
+2026-07-08 12:00:00 progress: success 125/500 (25%), attempted: 128, errors: 3, running shards: 8/8
 ```
 
 调整并发：
@@ -83,6 +84,7 @@ bash scripts/run_full_8gpu_vllm.sh
 ```
 
 每个 shard 都启用了 `--resume`，已经写入 JSONL 的行会跳过。
+注意：默认只跳过成功行，之前有 `llm_error` 的失败行会自动重试。如果任一端口的 vLLM 服务未就绪，脚本会在开始前退出；如果运行后仍有错误行，脚本会返回失败状态，修好服务后重新运行同一个命令即可。
 
 ## 5. 停止 vLLM 服务
 

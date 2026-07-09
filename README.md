@@ -68,7 +68,7 @@ bash scripts/run_full_8gpu_vllm.sh
 运行过程中主终端会定时显示总进度：
 
 ```text
-2026-07-08 12:00:00 progress: 1250/29019 (4%), running shards: 8/8
+2026-07-08 12:00:00 progress: success 1250/29019 (4%), attempted: 1260, errors: 10, running shards: 8/8
 ```
 
 默认每 30 秒刷新一次，可以用 `PROGRESS_INTERVAL` 调整：
@@ -104,9 +104,14 @@ output/qwen32b_8gpu/merged/llm_post_relevance_filtered.csv
 - `llm_post_relevance_filtered.csv`
 - `llm_post_relevance_removed.csv`
 - `llm_post_relevance_review.csv`
+- `llm_post_relevance_errors.csv`
 - `llm_platform_summary.csv`
 - `llm_topic_summary.csv`
 - `llm_run_summary.json`
 - `llm_merge_summary.json`
 
-所有运行脚本都启用了 `--resume`，中断后可以直接重新运行对应命令续跑。
+`llm_run_summary.json` 会写出 `success_rows`、`error_rows`、`error_rate` 和 `error_counts`。
+
+所有运行脚本都启用了 `--resume`，中断后可以直接重新运行对应命令续跑。默认只跳过已经成功的行；之前写入了 `llm_error` 的失败行会在下一次运行时自动重试。
+
+运行脚本会在开始前检查 `8000-8007` 的 `/v1/models` 是否可用。如果任一 vLLM 服务未就绪，脚本会直接退出，不会把整批请求写成失败结果。正式脚本和小样本脚本也启用了失败保护：如果运行结束后仍存在 `llm_error`，脚本会返回非零退出码，修复服务后重新运行同一命令即可重试失败行。

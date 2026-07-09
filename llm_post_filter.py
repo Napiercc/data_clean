@@ -45,6 +45,7 @@ DEFAULT_OUTPUT_DIR = Path("output/qwen32b_full")
 DEFAULT_MODEL = "../models/Qwen3-32B"
 KEEP_TOPIC_RELEVANCE = {"strongly_relevant", "relevant"}
 KEEP_DISCUSSION = {"high", "medium"}
+DEFAULT_MAX_POST_CHARS = 5000
 
 SYSTEM_PROMPT = """You are a strict second-stage reviewer for a social media research dataset.
 
@@ -169,6 +170,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sleep", type=float, default=0.0, help="Seconds to sleep between API calls.")
     parser.add_argument("--max_retries", type=int, default=5, help="Retries per row on transient API errors.")
     parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds.")
+    parser.add_argument(
+        "--max_post_chars",
+        type=int,
+        default=DEFAULT_MAX_POST_CHARS,
+        help="Maximum post text characters sent to the LLM. 0 disables truncation.",
+    )
+    parser.add_argument("--skip_preflight", action="store_true", help="Skip the /models API readiness check before processing.")
+    parser.add_argument("--fail_on_errors", action="store_true", help="Exit non-zero if any rows still have llm_error after processing.")
+    parser.add_argument(
+        "--no_retry_errors",
+        action="store_true",
+        help="With --resume, also skip rows that previously ended with llm_error. Default is to retry failed rows.",
+    )
     parser.add_argument("--no_enforce_keep_rule", action="store_true", help="Do not override inconsistent model final_keep values.")
     return parser.parse_args()
 
@@ -242,10 +256,10 @@ def apply_shard(rows: List[Dict[str, str]], args: argparse.Namespace) -> List[Di
     return [row for index, row in enumerate(rows) if index % args.num_shards == args.shard_index]
 
 
-def processed_keys(path: Path) -> set[str]:
-    keys: set[str] = set()
+def processed_keys(path: Path, retry_errors: bool = True) -> set[str]:
+    latest_by_key: Dict[str, Dict[str, Any]] = {}
     if not path.exists():
-        return keys
+        return set()
     with path.open("r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
@@ -257,11 +271,23 @@ def processed_keys(path: Path) -> set[str]:
                 continue
             key = obj.get("llm_row_key")
             if key:
-                keys.add(str(key))
-    return keys
+                latest_by_key[str(key)] = obj
+    if not retry_errors:
+        return set(latest_by_key.keys())
+    return {
+        key
+        for key, obj in latest_by_key.items()
+        if not str(obj.get("llm_error", "")).strip()
+    }
 
 
-def build_user_prompt(row: Dict[str, str]) -> str:
+def truncate_text(text: str, max_chars: int) -> str:
+    if max_chars <= 0 or len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n[TRUNCATED]"
+
+
+def build_user_prompt(row: Dict[str, str], args: argparse.Namespace) -> str:
     fields = {
         "platform": row.get("platform", ""),
         "record_type": row.get("record_type", ""),
@@ -269,7 +295,7 @@ def build_user_prompt(row: Dict[str, str]) -> str:
         "retrieval_keyword": row.get("keyword", ""),
         "rule_label": row.get("relevance_label", ""),
         "rule_reason": row.get("relevance_reason", ""),
-        "post_text": row.get("cont_clean", ""),
+        "post_text": truncate_text(row.get("cont_clean", ""), args.max_post_chars),
     }
     return (
         "Review this social media post for the assigned topic.\n"
@@ -283,7 +309,7 @@ def chat_completion_payload(row: Dict[str, str], args: argparse.Namespace) -> Di
         "model": args.model,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(row)},
+            {"role": "user", "content": build_user_prompt(row, args)},
         ],
         "temperature": 0,
         "response_format": {
@@ -296,6 +322,23 @@ def chat_completion_payload(row: Dict[str, str], args: argparse.Namespace) -> Di
         },
     }
     return payload
+
+
+def preflight_api(args: argparse.Namespace, api_key: str) -> None:
+    url = args.base_url.rstrip("/") + "/models"
+    request = urllib.request.Request(
+        url,
+        method="GET",
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=min(args.timeout, 10)) as resp:
+            resp.read()
+    except Exception as exc:
+        raise SystemExit(
+            f"API preflight failed for {url}: {type(exc).__name__}: {exc}. "
+            "Start or fix the vLLM service before running the filter."
+        )
 
 
 def extract_chat_output_text(response: Dict[str, Any]) -> str:
@@ -427,8 +470,12 @@ def read_jsonl(path: Path) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     with path.open("r", encoding="utf-8-sig") as f:
         for line in f:
-            if line.strip():
+            if not line.strip():
+                continue
+            try:
                 rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
     return rows
 
 
@@ -445,9 +492,29 @@ def write_csv(path: Path, rows: List[Dict[str, Any]], fields: List[str]) -> None
         writer.writerows(rows)
 
 
+def dedupe_latest_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    latest_by_key: Dict[str, Dict[str, Any]] = {}
+    key_order: List[str] = []
+    for row in rows:
+        key = str(row.get("llm_row_key") or row_key(row))
+        if not key:
+            continue
+        if key not in latest_by_key:
+            key_order.append(key)
+        latest_by_key[key] = row
+    return [latest_by_key[key] for key in key_order]
+
+
+def error_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [r for r in rows if str(r.get("llm_error", "")).strip()]
+
+
 def summarize(rows: List[Dict[str, Any]], output_dir: Path) -> None:
+    rows = dedupe_latest_rows(rows)
     keep_rows = [r for r in rows if str(r.get("llm_final_keep", "")).lower() == "true"]
     removed_rows = [r for r in rows if str(r.get("llm_final_keep", "")).lower() != "true"]
+    failed_rows = error_rows(rows)
+    success_rows = [r for r in rows if not str(r.get("llm_error", "")).strip()]
     review_rows = [
         r
         for r in rows
@@ -460,6 +527,7 @@ def summarize(rows: List[Dict[str, Any]], output_dir: Path) -> None:
     write_csv(output_dir / "llm_post_relevance_filtered.csv", keep_rows, fields)
     write_csv(output_dir / "llm_post_relevance_removed.csv", removed_rows, fields)
     write_csv(output_dir / "llm_post_relevance_review.csv", review_rows, fields)
+    write_csv(output_dir / "llm_post_relevance_errors.csv", failed_rows, fields)
 
     platform_summary = build_group_summary(rows, "platform")
     topic_summary = build_group_summary(rows, "topic")
@@ -468,9 +536,13 @@ def summarize(rows: List[Dict[str, Any]], output_dir: Path) -> None:
 
     label_summary = {
         "processed_rows": len(rows),
+        "success_rows": len(success_rows),
+        "error_rows": len(failed_rows),
+        "error_rate": round(len(failed_rows) / len(rows), 4) if rows else 0,
         "kept_rows": len(keep_rows),
         "removed_rows": len(removed_rows),
         "review_rows": len(review_rows),
+        "error_counts": dict(Counter(str(r.get("llm_error", "")) for r in failed_rows)),
         "topic_relevance_counts": dict(Counter(str(r.get("llm_topic_relevance", "")) for r in rows)),
         "stance_label_counts": dict(Counter(str(r.get("llm_stance_label", "")) for r in rows)),
         "discussion_potential_counts": dict(Counter(str(r.get("llm_discussion_potential", "")) for r in rows)),
@@ -493,12 +565,16 @@ def build_group_summary(rows: List[Dict[str, Any]], group_field: str) -> List[Di
     summary_rows = []
     for group, group_rows in grouped.items():
         keep_count = sum(str(r.get("llm_final_keep", "")).lower() == "true" for r in group_rows)
+        error_count = sum(bool(str(r.get("llm_error", "")).strip()) for r in group_rows)
         stance_count = sum(str(r.get("llm_has_stance", "")).lower() == "true" for r in group_rows)
         discussion_count = sum(r.get("llm_discussion_potential") in KEEP_DISCUSSION for r in group_rows)
         summary_rows.append(
             {
                 group_field: group,
                 "row_count": len(group_rows),
+                "success_count": len(group_rows) - error_count,
+                "error_count": error_count,
+                "error_rate": round(error_count / len(group_rows), 4) if group_rows else 0,
                 "llm_keep_count": keep_count,
                 "llm_keep_rate": round(keep_count / len(group_rows), 4) if group_rows else 0,
                 "has_stance_count": stance_count,
@@ -515,7 +591,7 @@ def build_group_summary(rows: List[Dict[str, Any]], group_field: str) -> List[Di
     return sorted(summary_rows, key=lambda r: r["llm_keep_count"], reverse=True)
 
 
-def merge_shard_outputs(shard_dirs: List[Path], output_dir: Path) -> None:
+def merge_shard_outputs(shard_dirs: List[Path], output_dir: Path) -> List[Dict[str, Any]]:
     merged_by_key: Dict[str, Dict[str, Any]] = {}
     input_files: List[str] = []
     for shard_dir in shard_dirs:
@@ -541,6 +617,7 @@ def merge_shard_outputs(shard_dirs: List[Path], output_dir: Path) -> None:
         encoding="utf-8",
     )
     print(f"Merged {len(rows)} rows into {output_dir}")
+    return rows
 
 
 def write_prompt_preview(output_dir: Path, rows: List[Dict[str, str]], args: argparse.Namespace) -> None:
@@ -550,7 +627,7 @@ def write_prompt_preview(output_dir: Path, rows: List[Dict[str, str]], args: arg
         "system_prompt": SYSTEM_PROMPT,
         "schema": OUTPUT_SCHEMA,
         "sample_count": len(rows),
-        "first_user_prompt": build_user_prompt(rows[0]) if rows else "",
+        "first_user_prompt": build_user_prompt(rows[0], args) if rows else "",
     }
     (output_dir / "llm_prompt_preview.json").write_text(json.dumps(preview, ensure_ascii=False, indent=2), encoding="utf-8")
     if rows:
@@ -599,7 +676,10 @@ def main() -> None:
     jsonl_path = output_dir / "llm_post_relevance_pairs.jsonl"
 
     if args.merge_dirs:
-        merge_shard_outputs([Path(item) for item in args.merge_dirs], output_dir)
+        merged_rows = merge_shard_outputs([Path(item) for item in args.merge_dirs], output_dir)
+        failed_count = len(error_rows(merged_rows))
+        if args.fail_on_errors and failed_count:
+            raise SystemExit(f"{failed_count} merged rows still have llm_error.")
         return
 
     if args.finalize_only:
@@ -623,7 +703,7 @@ def main() -> None:
 
     api_key = os.environ.get(args.api_key_env) or "EMPTY"
 
-    done = processed_keys(jsonl_path) if args.resume else set()
+    done = processed_keys(jsonl_path, retry_errors=not args.no_retry_errors) if args.resume else set()
     todo = [row for row in selected if row_key(row) not in done]
     print(f"Input rows: {len(rows)}")
     print(f"Selected rows before shard: {selected_before_shard}")
@@ -634,12 +714,21 @@ def main() -> None:
     print(f"To process: {len(todo)}")
     print(f"Output JSONL: {jsonl_path}")
 
+    if todo and not args.skip_preflight:
+        preflight_api(args, api_key)
+
     run_rows(todo, jsonl_path, args, api_key)
 
-    all_rows = read_jsonl(jsonl_path)
+    all_rows = dedupe_latest_rows(read_jsonl(jsonl_path))
+    write_jsonl(jsonl_path, all_rows)
     summarize(all_rows, output_dir)
     print(f"Done. Processed rows in JSONL: {len(all_rows)}")
     print(f"Filtered: {output_dir / 'llm_post_relevance_filtered.csv'}")
+    failed_count = len(error_rows(all_rows))
+    if args.fail_on_errors and failed_count:
+        raise SystemExit(
+            f"{failed_count} rows still have llm_error. Fix the service issue and rerun with --resume to retry them."
+        )
 
 
 if __name__ == "__main__":
