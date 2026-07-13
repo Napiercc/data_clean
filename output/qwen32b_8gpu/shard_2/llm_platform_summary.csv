@@ -1,6 +1,6 @@
-﻿platform,row_count,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
-Facebook,38,0,0.0,0,0.0,0,0.0,0,0,0,0,0
-Instagram,154,0,0.0,0,0.0,0,0.0,0,0,0,0,0
-Reddit,21,0,0.0,0,0.0,0,0.0,0,0,0,0,0
-X,873,0,0.0,0,0.0,0,0.0,0,0,0,0,0
-YouTube,2542,0,0.0,0,0.0,0,0.0,0,0,0,0,0
+﻿platform,row_count,success_count,error_count,error_rate,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
+YouTube,2542,2421,121,0.0476,759,0.2986,760,0.299,1763,0.6935,1731,512,158,0,20
+X,873,864,9,0.0103,545,0.6243,545,0.6243,669,0.7663,665,131,63,0,5
+Instagram,154,152,2,0.013,94,0.6104,94,0.6104,121,0.7857,137,15,0,0,0
+Facebook,38,37,1,0.0263,12,0.3158,12,0.3158,23,0.6053,18,13,6,0,0
+Reddit,21,20,1,0.0476,1,0.0476,1,0.0476,8,0.381,10,3,6,0,1

@@ -1,6 +1,6 @@
-﻿platform,row_count,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
-YouTube,2541,701,0.2759,701,0.2759,1686,0.6635,1658,539,150,0,13
-X,873,536,0.614,537,0.6151,658,0.7537,645,130,62,0,6
-Instagram,155,87,0.5613,87,0.5613,107,0.6903,134,11,1,0,0
-Facebook,37,7,0.1892,7,0.1892,12,0.3243,12,2,1,0,0
-Reddit,21,3,0.1429,3,0.1429,7,0.3333,10,5,5,0,1
+﻿platform,row_count,success_count,error_count,error_rate,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
+YouTube,2541,2469,72,0.0283,750,0.2952,750,0.2952,1774,0.6982,1748,557,150,0,14
+X,873,862,11,0.0126,542,0.6208,543,0.622,668,0.7652,660,133,63,0,6
+Instagram,155,154,1,0.0065,92,0.5935,92,0.5935,114,0.7355,141,12,1,0,0
+Facebook,37,35,2,0.0541,15,0.4054,15,0.4054,27,0.7297,26,6,3,0,0
+Reddit,21,21,0,0.0,3,0.1429,3,0.1429,7,0.3333,10,5,5,0,1
