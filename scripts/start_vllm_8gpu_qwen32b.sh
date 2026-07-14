@@ -7,6 +7,7 @@ BASE_PORT="${BASE_PORT:-8000}"
 GPU_GROUPS="${GPU_GROUPS:-4,5,6,7}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.85}"
+MAX_NUM_SEQS="${MAX_NUM_SEQS:-32}"
 PID_DIR="${PID_DIR:-run/vllm_pids}"
 LOG_DIR="${LOG_DIR:-logs/vllm}"
 
@@ -54,6 +55,7 @@ for group_index in "${!gpu_groups[@]}"; do
     --tensor-parallel-size "$tensor_parallel_size" \
     --max-model-len "$MAX_MODEL_LEN" \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
+    --max-num-seqs "$MAX_NUM_SEQS" \
     > "$log_file" 2>&1 &
   echo $! > "$pid_file"
 done

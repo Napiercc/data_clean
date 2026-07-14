@@ -33,7 +33,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter, defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -45,7 +45,8 @@ DEFAULT_OUTPUT_DIR = Path("output/qwen32b_full")
 DEFAULT_MODEL = "../models/Qwen3-32B"
 KEEP_TOPIC_RELEVANCE = {"strongly_relevant", "relevant"}
 KEEP_DISCUSSION = {"high", "medium"}
-DEFAULT_MAX_POST_CHARS = 5000
+DEFAULT_MAX_POST_CHARS = 2500
+DEFAULT_MAX_OUTPUT_TOKENS = 1024
 
 SYSTEM_PROMPT = """You are a strict second-stage reviewer for a social media research dataset.
 
@@ -64,6 +65,7 @@ Rules:
 - If the text looks like an ad, spam, generic entertainment, job post, or unrelated personal update, do not keep it.
 - If the text is truncated or too vague to judge, mark insufficient_context or unclear as appropriate.
 - Keep final_keep true only if topic_relevance is strongly_relevant or relevant, has_stance is true, and discussion_potential is high or medium.
+- Keep every reason field to at most 16 words, with no quotation marks or line breaks.
 """
 
 OUTPUT_SCHEMA = {
@@ -165,17 +167,37 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--merge_dirs", nargs="*", default=[], help="Merge shard output directories and write final summaries.")
     parser.add_argument("--seed", type=int, default=20260703, help="Random seed for sampling.")
     parser.add_argument("--resume", action="store_true", help="Skip rows already present in the output JSONL.")
+    parser.add_argument(
+        "--resume_from",
+        nargs="*",
+        default=[],
+        help="Import prior JSONL files or output directories before --resume. Current output takes precedence.",
+    )
     parser.add_argument("--finalize_only", action="store_true", help="Only rebuild CSV summaries from existing JSONL.")
     parser.add_argument("--dry_run", action="store_true", help="Write prompt preview and selected input rows, but do not call the API.")
     parser.add_argument("--sleep", type=float, default=0.0, help="Seconds to sleep between API calls.")
-    parser.add_argument("--max_retries", type=int, default=5, help="Retries per row on transient API errors.")
-    parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds.")
+    parser.add_argument("--max_retries", type=int, default=2, help="Retries per row on transient API errors.")
+    parser.add_argument("--timeout", type=int, default=90, help="HTTP timeout seconds.")
+    parser.add_argument(
+        "--max_output_tokens",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_TOKENS,
+        help=f"Maximum generated tokens per row. Default: {DEFAULT_MAX_OUTPUT_TOKENS}.",
+    )
     parser.add_argument(
         "--max_post_chars",
         type=int,
         default=DEFAULT_MAX_POST_CHARS,
         help="Maximum post text characters sent to the LLM. 0 disables truncation.",
     )
+    parser.add_argument(
+        "--disable_thinking",
+        dest="enable_thinking",
+        action="store_false",
+        default=True,
+        help="Disable Qwen3 thinking mode. Thinking is enabled by default.",
+    )
+    parser.add_argument("--progress_every", type=int, default=25, help="Print and flush progress every N completed rows.")
     parser.add_argument("--skip_preflight", action="store_true", help="Skip the /models API readiness check before processing.")
     parser.add_argument("--fail_on_errors", action="store_true", help="Exit non-zero if any rows still have llm_error after processing.")
     parser.add_argument(
@@ -247,6 +269,10 @@ def validate_shard_args(args: argparse.Namespace) -> None:
         raise SystemExit("--shard_index must be between 0 and num_shards - 1")
     if args.workers < 1:
         raise SystemExit("--workers must be >= 1")
+    if args.max_output_tokens < 1:
+        raise SystemExit("--max_output_tokens must be >= 1")
+    if args.progress_every < 1:
+        raise SystemExit("--progress_every must be >= 1")
 
 
 def apply_shard(rows: List[Dict[str, str]], args: argparse.Namespace) -> List[Dict[str, str]]:
@@ -312,6 +338,7 @@ def chat_completion_payload(row: Dict[str, str], args: argparse.Namespace) -> Di
             {"role": "user", "content": build_user_prompt(row, args)},
         ],
         "temperature": 0,
+        "max_tokens": args.max_output_tokens,
         "response_format": {
             "type": "json_schema",
             "json_schema": {
@@ -321,6 +348,9 @@ def chat_completion_payload(row: Dict[str, str], args: argparse.Namespace) -> Di
             },
         },
     }
+    if args.enable_thinking:
+        # Explicitly preserve Qwen3's reasoning mode even if the server default changes.
+        payload["chat_template_kwargs"] = {"enable_thinking": True}
     return payload
 
 
@@ -341,6 +371,13 @@ def preflight_api(args: argparse.Namespace, api_key: str) -> None:
         )
 
 
+def strip_thinking_content(text: str) -> str:
+    text = text.strip()
+    if "</think>" in text:
+        return text.rsplit("</think>", 1)[1].strip()
+    return text
+
+
 def extract_chat_output_text(response: Dict[str, Any]) -> str:
     choices = response.get("choices") or []
     if not choices:
@@ -348,31 +385,34 @@ def extract_chat_output_text(response: Dict[str, Any]) -> str:
     message = choices[0].get("message") or {}
     content = message.get("content", "")
     if isinstance(content, str):
-        return content.strip()
+        # Without a reasoning parser, some vLLM versions return Qwen3 thought
+        # content inline before the final JSON instead of in reasoning_content.
+        return strip_thinking_content(content)
     if isinstance(content, list):
         pieces = []
         for item in content:
             if isinstance(item, dict) and isinstance(item.get("text"), str):
                 pieces.append(item["text"])
-        return "".join(pieces).strip()
+        return strip_thinking_content("".join(pieces))
     return ""
 
 
 def call_vllm(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     url = args.base_url.rstrip("/") + "/chat/completions"
     payload = chat_completion_payload(row, args)
-    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(
-        url,
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-    )
+    sent_template_kwargs = "chat_template_kwargs" in payload
     last_error: Optional[str] = None
     for attempt in range(args.max_retries + 1):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        request = urllib.request.Request(
+            url,
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+        )
         try:
             with urllib.request.urlopen(request, timeout=args.timeout) as resp:
                 raw = resp.read().decode("utf-8")
@@ -383,9 +423,18 @@ def call_vllm(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> Tu
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             last_error = f"HTTP {exc.code}: {detail[:1000]}"
+            if exc.code == 400 and sent_template_kwargs:
+                # Older vLLM versions may not accept this non-OpenAI extension.
+                payload.pop("chat_template_kwargs", None)
+                sent_template_kwargs = False
+                continue
             if exc.code not in {408, 409, 429, 500, 502, 503, 504}:
                 break
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        except json.JSONDecodeError as exc:
+            last_error = f"{type(exc).__name__}: {exc}"
+            # Repeating a deterministic malformed completion wastes several timeout windows.
+            break
+        except (urllib.error.URLError, TimeoutError) as exc:
             last_error = f"{type(exc).__name__}: {exc}"
         if attempt < args.max_retries:
             time.sleep(min(60, 2**attempt))
@@ -457,11 +506,6 @@ def result_row(
     )
     out.update(usage_fields(response or {}))
     return out
-
-
-def append_jsonl(path: Path, obj: Dict[str, Any]) -> None:
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
 
 def read_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -620,6 +664,33 @@ def merge_shard_outputs(shard_dirs: List[Path], output_dir: Path) -> List[Dict[s
     return rows
 
 
+def import_resume_rows(jsonl_path: Path, sources: List[str]) -> Tuple[int, List[str]]:
+    """Import prior outputs once, while allowing this run's own results to win."""
+    source_files: List[Path] = []
+    target = jsonl_path.resolve()
+    for source in sources:
+        source_path = Path(source)
+        source_file = source_path / "llm_post_relevance_pairs.jsonl" if source_path.is_dir() else source_path
+        if not source_file.exists():
+            print(f"Skipping missing resume source: {source_file}")
+            continue
+        if source_file.resolve() == target:
+            continue
+        source_files.append(source_file)
+
+    if not source_files:
+        return 0, []
+
+    imported_rows: List[Dict[str, Any]] = []
+    for source_file in source_files:
+        imported_rows.extend(read_jsonl(source_file))
+
+    # Older shard results are read first; the current dynamic run overrides them.
+    combined_rows = dedupe_latest_rows(imported_rows + read_jsonl(jsonl_path))
+    write_jsonl(jsonl_path, combined_rows)
+    return len(combined_rows), [str(path) for path in source_files]
+
+
 def write_prompt_preview(output_dir: Path, rows: List[Dict[str, str]], args: argparse.Namespace) -> None:
     preview = {
         "model": args.model,
@@ -647,23 +718,56 @@ def process_row(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> 
 
 
 def run_rows(todo: List[Dict[str, str]], jsonl_path: Path, args: argparse.Namespace, api_key: str) -> None:
-    if args.workers == 1:
-        for index, row in enumerate(todo, start=1):
-            out = process_row(row, args, api_key)
-            append_jsonl(jsonl_path, out)
-            if index % 25 == 0 or index == 1:
-                print(f"processed {index}/{len(todo)}")
-            if args.sleep:
-                time.sleep(args.sleep)
+    """Keep a fixed number of requests in flight until the shared queue is empty."""
+    if not todo:
         return
 
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = [executor.submit(process_row, row, args, api_key) for row in todo]
-        for index, future in enumerate(as_completed(futures), start=1):
-            out = future.result()
-            append_jsonl(jsonl_path, out)
-            if index % 25 == 0 or index == 1:
-                print(f"processed {index}/{len(todo)}")
+    worker_count = min(args.workers, len(todo))
+    completed_count = 0
+    success_count = 0
+    error_count = 0
+    started_at = time.monotonic()
+    iterator = iter(todo)
+
+    def submit_next(executor: ThreadPoolExecutor, pending: set[Future[Dict[str, Any]]]) -> bool:
+        try:
+            row = next(iterator)
+        except StopIteration:
+            return False
+        pending.add(executor.submit(process_row, row, args, api_key))
+        return True
+
+    with jsonl_path.open("a", encoding="utf-8", buffering=1024 * 1024) as output_file:
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            pending: set[Future[Dict[str, Any]]] = set()
+            for _ in range(worker_count):
+                submit_next(executor, pending)
+
+            while pending:
+                finished, pending = wait(pending, return_when=FIRST_COMPLETED)
+                for future in finished:
+                    out = future.result()
+                    output_file.write(json.dumps(out, ensure_ascii=False) + "\n")
+                    completed_count += 1
+                    if str(out.get("llm_error", "")).strip():
+                        error_count += 1
+                    else:
+                        success_count += 1
+
+                    submit_next(executor, pending)
+
+                    if completed_count % args.progress_every == 0 or completed_count == 1:
+                        output_file.flush()
+                        elapsed_minutes = max((time.monotonic() - started_at) / 60, 1e-9)
+                        rate = completed_count / elapsed_minutes
+                        print(
+                            f"processed {completed_count}/{len(todo)} | "
+                            f"ok {success_count}, errors {error_count} | "
+                            f"{rate:.1f} rows/min | in flight {len(pending)}/{worker_count}"
+                        )
+                    if args.sleep:
+                        time.sleep(args.sleep)
+        output_file.flush()
 
 
 def main() -> None:
@@ -703,6 +807,8 @@ def main() -> None:
 
     api_key = os.environ.get(args.api_key_env) or "EMPTY"
 
+    imported_count, imported_sources = import_resume_rows(jsonl_path, args.resume_from)
+
     done = processed_keys(jsonl_path, retry_errors=not args.no_retry_errors) if args.resume else set()
     todo = [row for row in selected if row_key(row) not in done]
     print(f"Input rows: {len(rows)}")
@@ -710,6 +816,10 @@ def main() -> None:
     print(f"Shard: {args.shard_index}/{args.num_shards}")
     print(f"Selected rows in shard: {len(selected)}")
     print(f"Workers: {args.workers}")
+    print(f"Qwen3 thinking: {'enabled' if args.enable_thinking else 'disabled'}")
+    print(f"Max output tokens: {args.max_output_tokens}")
+    if imported_sources:
+        print(f"Imported {imported_count} rows from {len(imported_sources)} resume source(s)")
     print(f"Already processed: {len(done)}")
     print(f"To process: {len(todo)}")
     print(f"Output JSONL: {jsonl_path}")

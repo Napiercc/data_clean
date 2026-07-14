@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM 筛选结果总结</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --ink: #1e252d;
+  --muted: #64717f;
+  --line: #d9e0e7;
+  --accent: #176b87;
+  --good: #2d7d46;
+  --warn: #ad6b12;
+  --bad: #b23b3b;
+  --soft-blue: #e8f3f7;
+  --soft-green: #e9f6ee;
+  --soft-red: #f9eaea;
+  --soft-amber: #fff2d8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.45;
+}
+header {
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+}
+.header-inner, main { max-width: 1180px; margin: 0 auto; padding: 28px 24px; }
+h1 { margin: 0 0 8px; font-size: 30px; font-weight: 760; letter-spacing: 0; }
+.subtitle { color: var(--muted); margin: 0; font-size: 14px; }
+.notice {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #edc36f;
+  background: var(--soft-amber);
+  border-radius: 8px;
+  color: #6c470a;
+}
+section { margin: 24px 0; }
+.section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+h2 { margin: 0; font-size: 19px; letter-spacing: 0; }
+.hint { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.metric-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.metric-value { font-size: 28px; font-weight: 760; margin-top: 8px; }
+.metric-note { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+th, td { padding: 10px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; font-size: 13px; }
+th { background: #eef2f5; color: #3d4a56; font-weight: 700; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.topic { max-width: 420px; }
+.tag { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border-radius: 999px; background: #edf1f4; color: #34424e; font-size: 12px; font-weight: 650; }
+.tag.good { background: var(--soft-green); color: #1f6a38; }
+.tag.warn { background: var(--soft-amber); color: #7a4e07; }
+.tag.bad { background: var(--soft-red); color: #953232; }
+.bar, .spark { width: 100%; height: 9px; background: #e7ecf1; border-radius: 99px; overflow: hidden; }
+.bar span, .spark span { display: block; height: 100%; background: var(--accent); }
+.bar span.good, .spark span.good { background: var(--good); }
+.bar span.warn, .spark span.warn { background: var(--warn); }
+.bar span.bad, .spark span.bad { background: var(--bad); }
+.spark { min-width: 80px; }
+.callout-list { display: grid; gap: 10px; }
+.callout { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 13px 14px; }
+.callout.bad { border-left-color: var(--bad); }
+.callout.warn { border-left-color: var(--warn); }
+.callout strong { display: block; margin-bottom: 4px; }
+.samples { display: grid; gap: 10px; }
+.sample { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.sample-meta { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+.sample-text { font-size: 13px; }
+.footer { color: var(--muted); font-size: 12px; margin-top: 28px; }
+@media (max-width: 900px) {
+  .cards, .grid-2 { grid-template-columns: 1fr; }
+  .header-inner, main { padding: 22px 16px; }
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+.method-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 12px; margin-bottom: 12px; }
+.method-list { display: grid; grid-template-columns: 130px 1fr; gap: 8px 12px; margin: 12px 0 0; font-size: 13px; }
+.method-list dt { color: var(--muted); font-weight: 700; }
+.method-list dd { margin: 0; }
+.method-bullets { margin: 12px 0 0; padding-left: 18px; font-size: 13px; }
+.method-bullets li { margin: 7px 0; }
+.method-note { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+.prompt-card { margin-top: 12px; }
+.prompt-box, .rule-box { margin: 12px 0 0; padding: 13px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; color: #1f2a33; white-space: pre-wrap; overflow-x: auto; font-size: 12px; line-height: 1.5; }
+.rule-box { font-size: 13px; font-weight: 700; }
+code { padding: 1px 4px; border-radius: 4px; background: #eef2f5; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
+@media (max-width: 900px) { .method-grid { grid-template-columns: 1fr; } .method-list { grid-template-columns: 1fr; } }
+
+.prompt-grid { margin-top: 12px; }
+</style>
+</head>
+<body>
+<header><div class="header-inner">
+<h1>LLM 筛选结果总结</h1>
+<p class="subtitle">基于当前文件：output/qwen32b_8gpu/merged/llm_post_relevance_pairs.csv。生成时间：2026-07-09 23:39:35</p>
+<div class="notice"><strong>结论：</strong>当前结果适合做阶段性诊断，不建议直接作为最终筛选结果。原因是 12,008 条记录存在 LLM 调用错误，占全量 41.4%；成功推理部分的保留率为 39.4%。</div>
+</div></header>
+<main>
+<section>
+<div class="cards">
+<div class="card">
+<div class="metric-label">总记录数</div>
+<div class="metric-value">29,019</div>
+<div class="metric-note">输入与 merged pairs 行数一致</div>
+</div>
+<div class="card">
+<div class="metric-label">成功推理</div>
+<div class="metric-value">17,011</div>
+<div class="metric-note">成功率 58.6%</div>
+<div class="bar"><span class="good" style="width:58.62%"></span></div>
+</div>
+<div class="card">
+<div class="metric-label">失败记录</div>
+<div class="metric-value">12,008</div>
+<div class="metric-note">错误率 41.4%</div>
+<div class="bar"><span class="bad" style="width:41.38%"></span></div>
+</div>
+<div class="card">
+<div class="metric-label">当前保留</div>
+<div class="metric-value">6,707</div>
+<div class="metric-note">全量保留率 23.1%</div>
+<div class="bar"><span class="warn" style="width:23.11%"></span></div>
+</div>
+</div>
+</section>
+<section>
+<div class="section-head"><div><h2>关键判断</h2><p class="hint">这些是决定当前结果能否进入后续分析的主要点。</p></div></div>
+<div class="callout-list">
+<div class="callout bad"><strong>运行完整性不足</strong>失败 12,008 条，其中 10,984 条是 Connection refused，说明当时部分 vLLM endpoint 不可用。</div>
+<div class="callout"><strong>成功推理部分有效收紧样本</strong>成功推理 17,011 条中保留 6,707 条，成功部分保留率 39.4%。</div>
+<div class="callout warn"><strong>立场规则可进一步收紧</strong>当前保留结果中有 1,249 条 stance_label 为 neutral_or_factual/unclear，占成功保留集 18.6%。如果只接受 support/oppose/mixed，成功部分保留会降到 5,458 条。</div>
+</div>
+</section>
+
+
+<section>
+  <div class="section-head"><div><h2>模型、Prompt 与筛选方法</h2><p class="hint">说明当前代码如何调用模型，以及每条记录如何被判定为保留或剔除。</p></div></div>
+  <div class="method-grid">
+    <div class="card">
+      <div class="metric-label">模型与运行方式</div>
+      <dl class="method-list">
+        <dt>模型</dt><dd>../models/Qwen3-32B</dd>
+        <dt>服务</dt><dd>vLLM OpenAI-compatible <code>/v1/chat/completions</code></dd>
+        <dt>当前默认 GPU</dt><dd><code>GPU_GROUPS=&quot;4,5,6,7&quot;</code>，单 endpoint，端口 <code>8000</code></dd>
+        <dt>Tensor parallel</dt><dd><code>--tensor-parallel-size 4</code></dd>
+        <dt>数据分片</dt><dd><code>NUM_SHARDS=8</code>，<code>NUM_ENDPOINTS=1</code>，默认每个 shard <code>WORKERS_PER_SHARD=1</code></dd>
+        <dt>生成设置</dt><dd><code>temperature=0</code>，严格 JSON schema 输出</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <div class="metric-label">输入给 LLM 的字段</div>
+      <ul class="method-bullets">
+        <li><code>platform</code>、<code>record_type</code></li>
+        <li><code>topic</code>：指定政策/公共议题</li>
+        <li><code>retrieval_keyword</code>：命中关键词</li>
+        <li><code>rule_label</code>、<code>rule_reason</code>：第一阶段规则筛选结果</li>
+        <li><code>post_text</code>：帖子正文；当前代码默认最多发送 5000 字符</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="metric-label">LLM 输出标签</div>
+      <ul class="method-bullets">
+        <li><strong>相关性：</strong><code>strongly_relevant</code>、<code>relevant</code>、<code>weak_keyword_match</code>、<code>off_topic</code>、<code>insufficient_context</code></li>
+        <li><strong>立场：</strong><code>has_stance</code> 加 <code>support</code>、<code>oppose</code>、<code>mixed_or_complex</code>、<code>neutral_or_factual</code>、<code>unclear</code></li>
+        <li><strong>讨论潜力：</strong><code>high</code>、<code>medium</code>、<code>low</code>、<code>unclear</code></li>
+        <li><strong>人工复核：</strong><code>needs_human_review</code> 或 <code>llm_error</code> 非空会进入 review 文件</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="metric-label">最终保留规则</div>
+      <pre class="rule-box">topic_relevance in strongly_relevant / relevant
+AND has_stance = true
+AND discussion_potential in high / medium</pre>
+      <p class="method-note">代码会强制执行这条规则：即使模型自己的 <code>final_keep</code> 与规则不一致，也会以规则计算出的 <code>llm_final_keep</code> 为准。</p>
+      <p class="method-note">注意：当前规则只检查 <code>has_stance=true</code>，不会额外要求 <code>stance_label</code> 必须是 support/oppose/mixed。因此报告中也提示了中性/不清楚立场被保留的样本风险。</p>
+    </div>
+  </div>
+  <div class="grid-2 prompt-grid">
+    <div class="card prompt-card">
+      <div class="metric-label">System Prompt 原文</div>
+      <pre class="prompt-box">You are a strict second-stage reviewer for a social media research dataset.
+
+Goal:
+Keep only posts that are genuinely close to the assigned topic, express or imply a stance, and are likely to invite public discussion.
+
+Rules:
+- Judge the post against the assigned topic, not against the keyword alone.
+- Do not keep a post only because it mentions a keyword.
+- The post must discuss the topic, the policy issue, public debate, directly related event, or a directly related personal experience.
+- A factual headline or neutral news summary may be topic-relevant, but it has no stance unless it endorses, criticizes, evaluates, worries about, demands, mocks, or otherwise takes a position.
+- Stance means a position, evaluation, preference, concern, endorsement, opposition, criticism, demand, or implied attitude toward the topic/policy/debate.
+- Do not treat general emotion as stance unless it is directed at the assigned topic.
+- Discussion potential means the text itself is likely to invite disagreement, replies, debate, agreement/disagreement, or public reaction.
+- Do not use likes, replies, views, reposts, or author popularity to judge discussion potential.
+- If the text looks like an ad, spam, generic entertainment, job post, or unrelated personal update, do not keep it.
+- If the text is truncated or too vague to judge, mark insufficient_context or unclear as appropriate.
+- Keep final_keep true only if topic_relevance is strongly_relevant or relevant, has_stance is true, and discussion_potential is high or medium.</pre>
+    </div>
+    <div class="card prompt-card">
+      <div class="metric-label">System Prompt 中文译文</div>
+      <pre class="prompt-box">你是一个严格的社交媒体研究数据集第二阶段审查员。
+
+目标：
+只保留真正贴近指定议题、表达或暗含立场、并且可能引发公共讨论的帖子。
+
+规则：
+- 根据指定议题判断帖子，而不是只根据关键词判断。
+- 不要因为帖子提到了关键词就保留。
+- 帖子必须讨论该议题、政策问题、公共辩论、直接相关事件，或直接相关的个人经历。
+- 事实性标题或中性新闻摘要可以是议题相关的，但除非它 endorses、criticizes、evaluates、worries about、demands、mocks，或以其他方式表达立场，否则不算有立场。
+- 立场指针对该议题/政策/辩论的 position、evaluation、preference、concern、endorsement、opposition、criticism、demand，或 implied attitude。
+- 不要把一般情绪当作立场，除非这种情绪是指向指定议题的。
+- 讨论潜力指文本本身是否可能引发分歧、回复、辩论、赞同/反对或公共反应。
+- 不要使用点赞、回复、浏览量、转发量或作者影响力来判断讨论潜力。
+- 如果文本看起来像广告、垃圾信息、泛娱乐内容、招聘帖或无关个人动态，不要保留。
+- 如果文本被截断或过于含糊、无法判断，应酌情标记为 insufficient_context 或 unclear。
+- 只有当 topic_relevance 为 strongly_relevant 或 relevant，has_stance 为 true，且 discussion_potential 为 high 或 medium 时，final_keep 才能为 true。</pre>
+    </div>
+  </div>
+  <div class="grid-2 prompt-grid">
+    <div class="card prompt-card">
+      <div class="metric-label">User Prompt 模板原文</div>
+      <pre class="prompt-box">Review this social media post for the assigned topic.
+Return only the structured JSON object requested by the schema.
+
+{
+  &quot;platform&quot;: &quot;&lt;platform&gt;&quot;,
+  &quot;record_type&quot;: &quot;&lt;record_type&gt;&quot;,
+  &quot;topic&quot;: &quot;&lt;assigned topic&gt;&quot;,
+  &quot;retrieval_keyword&quot;: &quot;&lt;keyword that matched the post&gt;&quot;,
+  &quot;rule_label&quot;: &quot;&lt;first-stage rule label&gt;&quot;,
+  &quot;rule_reason&quot;: &quot;&lt;first-stage rule reason&gt;&quot;,
+  &quot;post_text&quot;: &quot;&lt;post text, truncated to 5000 characters if needed&gt;&quot;
+}</pre>
+    </div>
+    <div class="card prompt-card">
+      <div class="metric-label">User Prompt 模板中文译文</div>
+      <pre class="prompt-box">请根据指定议题审查这条社交媒体帖子。
+只返回 schema 要求的结构化 JSON 对象。
+
+{
+  &quot;platform&quot;: &quot;&lt;平台&gt;&quot;,
+  &quot;record_type&quot;: &quot;&lt;记录类型&gt;&quot;,
+  &quot;topic&quot;: &quot;&lt;指定议题&gt;&quot;,
+  &quot;retrieval_keyword&quot;: &quot;&lt;命中该帖子的检索关键词&gt;&quot;,
+  &quot;rule_label&quot;: &quot;&lt;第一阶段规则标签&gt;&quot;,
+  &quot;rule_reason&quot;: &quot;&lt;第一阶段规则原因&gt;&quot;,
+  &quot;post_text&quot;: &quot;&lt;帖子正文；必要时截断到 5000 字符&gt;&quot;
+}</pre>
+    </div>
+  </div>
+</section>
+
+
+<section class="grid-2">
+<div>
+<h2>标签分布</h2>
+<p class="hint">仅统计成功推理的记录。</p>
+<table><thead><tr><th>维度</th><th>标签</th><th class="num">数量</th><th>占比</th></tr></thead><tbody>
+<tr><td>相关性</td><td>strongly_relevant</td><td class="num">12,347</td><td><div class="spark"><span class="" style="width:72.58%"></span></div> 72.6%</td></tr>
+<tr><td>相关性</td><td>relevant</td><td class="num">3,454</td><td><div class="spark"><span class="" style="width:20.30%"></span></div> 20.3%</td></tr>
+<tr><td>相关性</td><td>weak_keyword_match</td><td class="num">1,086</td><td><div class="spark"><span class="" style="width:6.38%"></span></div> 6.4%</td></tr>
+<tr><td>相关性</td><td>insufficient_context</td><td class="num">124</td><td><div class="spark"><span class="" style="width:0.73%"></span></div> 0.7%</td></tr>
+<tr><td>立场</td><td>neutral_or_factual</td><td class="num">11,411</td><td><div class="spark"><span class="" style="width:67.08%"></span></div> 67.1%</td></tr>
+<tr><td>立场</td><td>oppose</td><td class="num">2,876</td><td><div class="spark"><span class="" style="width:16.91%"></span></div> 16.9%</td></tr>
+<tr><td>立场</td><td>support</td><td class="num">2,581</td><td><div class="spark"><span class="" style="width:15.17%"></span></div> 15.2%</td></tr>
+<tr><td>立场</td><td>unclear</td><td class="num">135</td><td><div class="spark"><span class="" style="width:0.79%"></span></div> 0.8%</td></tr>
+<tr><td>立场</td><td>mixed_or_complex</td><td class="num">8</td><td><div class="spark"><span class="" style="width:0.05%"></span></div> 0.0%</td></tr>
+<tr><td>讨论潜力</td><td>medium</td><td class="num">7,221</td><td><div class="spark"><span class="" style="width:42.45%"></span></div> 42.4%</td></tr>
+<tr><td>讨论潜力</td><td>high</td><td class="num">5,366</td><td><div class="spark"><span class="" style="width:31.54%"></span></div> 31.5%</td></tr>
+<tr><td>讨论潜力</td><td>low</td><td class="num">4,424</td><td><div class="spark"><span class="" style="width:26.01%"></span></div> 26.0%</td></tr>
+</tbody></table>
+</div>
+<div>
+<h2>错误类型</h2>
+<p class="hint">统计 llm_error 非空记录。</p>
+<table><thead><tr><th>错误</th><th class="num">数量</th><th>占失败比例</th></tr></thead><tbody>
+<tr><td>URLError: &lt;urlopen error [Errno 111] Connection refused&gt;</td><td class="num">10,984</td><td><div class="spark"><span class="bad" style="width:100.00%"></span></div> 91.5%</td></tr>
+<tr><td>TimeoutError: timed out</td><td class="num">1,022</td><td><div class="spark"><span class="bad" style="width:9.30%"></span></div> 8.5%</td></tr>
+<tr><td>JSONDecodeError: Expecting &#x27;,&#x27; delimiter: line 1 column 906 (char 905)</td><td class="num">1</td><td><div class="spark"><span class="bad" style="width:0.01%"></span></div> 0.0%</td></tr>
+<tr><td>HTTP 400: {&quot;object&quot;:&quot;error&quot;,&quot;message&quot;:&quot;This model&#x27;s maximum context length is 4096 tokens. Howe...</td><td class="num">1</td><td><div class="spark"><span class="bad" style="width:0.01%"></span></div> 0.0%</td></tr>
+</tbody></table>
+</div>
+</section>
+<section>
+<div class="section-head"><div><h2>平台表现</h2><p class="hint">保留率同时给出全量口径和成功推理口径，后者更能反映模型筛选强度。</p></div></div>
+<table><thead><tr><th>平台</th><th class="num">总数</th><th class="num">成功</th><th class="num">失败</th><th class="num">保留</th><th>错误率</th><th>成功口径保留率</th></tr></thead><tbody>
+<tr>
+<td>YouTube</td>
+<td class="num">20,332</td>
+<td class="num">11,866</td>
+<td class="num">8,466</td>
+<td class="num">3,520</td>
+<td><div class="spark"><span class="bad" style="width:41.64%"></span></div> 41.6%</td>
+<td><div class="spark"><span class="good" style="width:29.66%"></span></div> 29.7%</td>
+</tr>
+<tr>
+<td>X</td>
+<td class="num">6,985</td>
+<td class="num">4,225</td>
+<td class="num">2,760</td>
+<td class="num">2,692</td>
+<td><div class="spark"><span class="bad" style="width:39.51%"></span></div> 39.5%</td>
+<td><div class="spark"><span class="good" style="width:63.72%"></span></div> 63.7%</td>
+</tr>
+<tr>
+<td>Instagram</td>
+<td class="num">1,234</td>
+<td class="num">743</td>
+<td class="num">491</td>
+<td class="num">429</td>
+<td><div class="spark"><span class="bad" style="width:39.79%"></span></div> 39.8%</td>
+<td><div class="spark"><span class="good" style="width:57.74%"></span></div> 57.7%</td>
+</tr>
+<tr>
+<td>Facebook</td>
+<td class="num">300</td>
+<td class="num">79</td>
+<td class="num">221</td>
+<td class="num">44</td>
+<td><div class="spark"><span class="bad" style="width:73.67%"></span></div> 73.7%</td>
+<td><div class="spark"><span class="good" style="width:55.70%"></span></div> 55.7%</td>
+</tr>
+<tr>
+<td>Reddit</td>
+<td class="num">168</td>
+<td class="num">98</td>
+<td class="num">70</td>
+<td class="num">22</td>
+<td><div class="spark"><span class="bad" style="width:41.67%"></span></div> 41.7%</td>
+<td><div class="spark"><span class="good" style="width:22.45%"></span></div> 22.4%</td>
+</tr>
+</tbody></table>
+</section>
+
+<section>
+<div class="section-head"><div><h2>Topic 保留量 Top 12</h2><p class="hint">按当前保留数量排序。</p></div></div>
+<table><thead><tr><th>Topic</th><th class="num">总数</th><th class="num">成功</th><th class="num">失败</th><th class="num">保留</th><th>成功口径保留率</th></tr></thead><tbody>
+<tr><td class="topic">政府是否应保护堕胎服务的可及性？</td><td class="num">1,250</td><td class="num">724</td><td class="num">526</td><td class="num">436</td><td><div class="spark"><span class="good" style="width:100.00%"></span></div> 60.2%</td></tr>
+<tr><td class="topic">是否应提供带薪家庭假和育儿假？</td><td class="num">1,550</td><td class="num">933</td><td class="num">617</td><td class="num">385</td><td><div class="spark"><span class="good" style="width:88.30%"></span></div> 41.3%</td></tr>
+<tr><td class="topic">是否应提高联邦最低工资？</td><td class="num">973</td><td class="num">585</td><td class="num">388</td><td class="num">347</td><td><div class="spark"><span class="good" style="width:79.59%"></span></div> 59.3%</td></tr>
+<tr><td class="topic">是否应加强警察问责并限制 qualified immunity？</td><td class="num">1,110</td><td class="num">635</td><td class="num">475</td><td class="num">299</td><td><div class="spark"><span class="good" style="width:68.58%"></span></div> 47.1%</td></tr>
+<tr><td class="topic">大学生是否应更容易获得 SNAP 食品援助？</td><td class="num">1,460</td><td class="num">862</td><td class="num">598</td><td class="num">293</td><td><div class="spark"><span class="good" style="width:67.20%"></span></div> 34.0%</td></tr>
+<tr><td class="topic">是否应扩大免费学校餐？</td><td class="num">948</td><td class="num">555</td><td class="num">393</td><td class="num">281</td><td><div class="spark"><span class="good" style="width:64.45%"></span></div> 50.6%</td></tr>
+<tr><td class="topic">美国是否应扩大可负担住房供给？</td><td class="num">1,077</td><td class="num">644</td><td class="num">433</td><td class="num">265</td><td><div class="spark"><span class="good" style="width:60.78%"></span></div> 41.1%</td></tr>
+<tr><td class="topic">是否应恢复或强化网络中立性规则？</td><td class="num">901</td><td class="num">516</td><td class="num">385</td><td class="num">251</td><td><div class="spark"><span class="good" style="width:57.57%"></span></div> 48.6%</td></tr>
+<tr><td class="topic">美国是否应加强移民执法和庇护限制？</td><td class="num">848</td><td class="num">479</td><td class="num">369</td><td class="num">245</td><td><div class="spark"><span class="good" style="width:56.19%"></span></div> 51.1%</td></tr>
+<tr><td class="topic">小费收入是否应免税？</td><td class="num">578</td><td class="num">334</td><td class="num">244</td><td class="num">231</td><td><div class="spark"><span class="good" style="width:52.98%"></span></div> 69.2%</td></tr>
+<tr><td class="topic">医疗债务是否不应影响个人信用记录？</td><td class="num">980</td><td class="num">561</td><td class="num">419</td><td class="num">228</td><td><div class="spark"><span class="good" style="width:52.29%"></span></div> 40.6%</td></tr>
+<tr><td class="topic">美国是否应征收或避免征收碳税？</td><td class="num">872</td><td class="num">501</td><td class="num">371</td><td class="num">217</td><td><div class="spark"><span class="good" style="width:49.77%"></span></div> 43.3%</td></tr>
+</tbody></table>
+</section>
+<section class="grid-2">
+<div>
+<h2>成功口径保留率最高</h2>
+<p class="hint">仅展示成功推理数不少于 30 的 topic。</p>
+<table><thead><tr><th>Topic</th><th class="num">成功</th><th class="num">保留</th><th>保留率</th></tr></thead><tbody>
+<tr><td class="topic">小费收入是否应免税？</td><td class="num">334</td><td class="num">231</td><td><div class="spark"><span class="good" style="width:69.16%"></span></div> 69.2%</td></tr>
+<tr><td class="topic">政府是否应保护堕胎服务的可及性？</td><td class="num">724</td><td class="num">436</td><td><div class="spark"><span class="good" style="width:60.22%"></span></div> 60.2%</td></tr>
+<tr><td class="topic">是否应提高联邦最低工资？</td><td class="num">585</td><td class="num">347</td><td><div class="spark"><span class="good" style="width:59.32%"></span></div> 59.3%</td></tr>
+<tr><td class="topic">信用卡滞纳金是否应被限制？</td><td class="num">335</td><td class="num">197</td><td><div class="spark"><span class="good" style="width:58.81%"></span></div> 58.8%</td></tr>
+<tr><td class="topic">美国是否应加强移民执法和庇护限制？</td><td class="num">479</td><td class="num">245</td><td><div class="spark"><span class="good" style="width:51.15%"></span></div> 51.1%</td></tr>
+<tr><td class="topic">是否应扩大免费学校餐？</td><td class="num">555</td><td class="num">281</td><td><div class="spark"><span class="good" style="width:50.63%"></span></div> 50.6%</td></tr>
+<tr><td class="topic">美国是否应对芬太尼采取更严格管制和刑事打击？</td><td class="num">408</td><td class="num">201</td><td><div class="spark"><span class="good" style="width:49.26%"></span></div> 49.3%</td></tr>
+<tr><td class="topic">是否应恢复或强化网络中立性规则？</td><td class="num">516</td><td class="num">251</td><td><div class="spark"><span class="good" style="width:48.64%"></span></div> 48.6%</td></tr>
+<tr><td class="topic">是否应扩大心理健康服务可及性？</td><td class="num">257</td><td class="num">122</td><td><div class="spark"><span class="good" style="width:47.47%"></span></div> 47.5%</td></tr>
+<tr><td class="topic">演唱会和体育赛事门票是否应强制显示全价？</td><td class="num">195</td><td class="num">92</td><td><div class="spark"><span class="good" style="width:47.18%"></span></div> 47.2%</td></tr>
+</tbody></table>
+</div>
+<div>
+<h2>成功口径保留率最低</h2>
+<p class="hint">仅展示成功推理数不少于 30 的 topic。</p>
+<table><thead><tr><th>Topic</th><th class="num">成功</th><th class="num">保留</th><th>保留率</th></tr></thead><tbody>
+<tr><td class="topic">是否应延续低收入家庭宽带补贴？</td><td class="num">257</td><td class="num">48</td><td><div class="spark"><span class="good" style="width:18.68%"></span></div> 18.7%</td></tr>
+<tr><td class="topic">IVF 等辅助生殖治疗是否应获得更多公共支持？</td><td class="num">785</td><td class="num">150</td><td><div class="spark"><span class="good" style="width:19.11%"></span></div> 19.1%</td></tr>
+<tr><td class="topic">政府是否应补贴家庭净水设备以应对 PFAS 等污染？</td><td class="num">791</td><td class="num">161</td><td><div class="spark"><span class="good" style="width:20.35%"></span></div> 20.4%</td></tr>
+<tr><td class="topic">政府是否应扩大纳洛酮等阿片过量急救药的获取？</td><td class="num">681</td><td class="num">143</td><td><div class="spark"><span class="good" style="width:21.00%"></span></div> 21.0%</td></tr>
+<tr><td class="topic">枪支遗失或被盗后是否应强制上报？</td><td class="num">240</td><td class="num">57</td><td><div class="spark"><span class="good" style="width:23.75%"></span></div> 23.8%</td></tr>
+<tr><td class="topic">AI 语音诈骗是否应强制披露或限制？</td><td class="num">626</td><td class="num">158</td><td><div class="spark"><span class="good" style="width:25.24%"></span></div> 25.2%</td></tr>
+<tr><td class="topic">是否应继续补贴 EV 充电基础设施？</td><td class="num">126</td><td class="num">34</td><td><div class="spark"><span class="good" style="width:26.98%"></span></div> 27.0%</td></tr>
+<tr><td class="topic">政府是否应补贴儿童照护费用？</td><td class="num">249</td><td class="num">70</td><td><div class="spark"><span class="good" style="width:28.11%"></span></div> 28.1%</td></tr>
+<tr><td class="topic">是否应扩大儿童税收抵免或改成按月发放？</td><td class="num">287</td><td class="num">82</td><td><div class="spark"><span class="good" style="width:28.57%"></span></div> 28.6%</td></tr>
+<tr><td class="topic">是否应要求更严格的枪支安全存储？</td><td class="num">39</td><td class="num">12</td><td><div class="spark"><span class="good" style="width:30.77%"></span></div> 30.8%</td></tr>
+</tbody></table>
+</div>
+</section>
+<section class="grid-2">
+<div>
+<h2>成功记录的剔除原因组合</h2>
+<p class="hint">根据最终规则反推，非模型原文原因。</p>
+<table><thead><tr><th>原因组合</th><th class="num">数量</th><th>占成功剔除比例</th></tr></thead><tbody>
+<tr><td>无明确立场</td><td class="num">5,870</td><td><div class="spark"><span class="warn" style="width:100.00%"></span></div> 57.0%</td></tr>
+<tr><td>无明确立场 + 讨论潜力低</td><td class="num">3,223</td><td><div class="spark"><span class="warn" style="width:54.91%"></span></div> 31.3%</td></tr>
+<tr><td>topic 不够相关 + 无明确立场 + 讨论潜力低</td><td class="num">1,198</td><td><div class="spark"><span class="warn" style="width:20.41%"></span></div> 11.6%</td></tr>
+<tr><td>topic 不够相关</td><td class="num">5</td><td><div class="spark"><span class="warn" style="width:0.09%"></span></div> 0.0%</td></tr>
+<tr><td>topic 不够相关 + 无明确立场</td><td class="num">5</td><td><div class="spark"><span class="warn" style="width:0.09%"></span></div> 0.0%</td></tr>
+<tr><td>topic 不够相关 + 讨论潜力低</td><td class="num">2</td><td><div class="spark"><span class="warn" style="width:0.03%"></span></div> 0.0%</td></tr>
+<tr><td>讨论潜力低</td><td class="num">1</td><td><div class="spark"><span class="warn" style="width:0.02%"></span></div> 0.0%</td></tr>
+</tbody></table>
+</div>
+<div>
+<h2>建议</h2>
+<div class="callout-list">
+<div class="callout"><strong>先补跑失败行</strong>当前新版脚本已经会自动重试 llm_error 非空行。建议先重启 vLLM 后重新运行 full 脚本。</div>
+<div class="callout"><strong>最终分析使用成功完整版本</strong>当 error_rows 变为 0 后，再使用 filtered.csv 做平台/topic 对比。</div>
+<div class="callout warn"><strong>考虑严格立场版</strong>如果研究需要明确立场，建议额外导出 stance_label in support/oppose/mixed_or_complex 的 strict filtered 版本。</div>
+</div>
+</div>
+</section>
+<section>
+<h2>需关注的保留样本</h2>
+<p class="hint">这些样本被保留，但 stance_label 是 neutral_or_factual 或 unclear。格式与随机审查样本一致，便于人工复核规则。</p>
+<div class="samples">
+<div class="sample">
+<div class="sample-meta">#1 / Facebook / topic: 是否应扩大免费学校餐？ / relevance: relevant / stance: unclear / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>A quiet act that lifted a heavy, invisible weight._When school lunch debt quietly piled up across communities, it wasn&#x27;t adults who felt it most. It was kids. Child…</div>
+<div class="sample-text"><strong>中文译文：</strong>一个安静的举动卸下了沉重而隐形的负担。当学校午餐债务在社区中悄悄累积时，感受最深的不是成年人，而是孩子们。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is relevant to the topic, implies a stance through concern for the issue, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid02Nu2dzi2thXTDT1qtq2a4HFYeDdPsspAxL5agJ1AW9A9qjK2r75y52hAh6jum8h6ql&amp;id=100071159708765" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#2 / Facebook / topic: 枪支遗失或被盗后是否应强制上报？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>Gun violence is the number one cause of death for children and teens in the United States.…</div>
+<div class="sample-text"><strong>中文译文：</strong>枪支暴力是美国儿童和青少年死亡的第一大原因。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents a factual statement about gun violence, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.facebook.com/NewtownActionAlliance/posts/pfbid0XTcF5TiHRiJhFTdDzH5iVToKpPumQ4QdREXkzwFMfMfp4CUDaSacxmTRFD3VdcRel?__cft__[0]=AZbqKTmNZqimscuqNauyfW8jy2LqQiAqg1GtGeaxCbVMnwrrPwzsuFgGrAC9hdzVMd1yUCorGWU1Th04CrnZvBA3wmOppCeI5ImeFFFExKMt1KCk5snDoBKk0QfL5Y_AkAbLRzWSSHKYRUzxxYmWbnyCmT_Pzet2pZaHuIZMhS-6c-VdpCuk_OtwUB92Ru1NoWE&amp;__tn__=%2CO%2CP-R" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#3 / Facebook / topic: 气候变化是否应作为公共健康问题治理？ / relevance: strongly_relevant / stance: unclear / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>The Climate Health Society&#x27;s newest board member, Dr. Zong-Liang Yang said &quot;Climate change is fundamentally reshaping the environmental conditions that influence human…</div>
+<div class="sample-text"><strong>中文译文：</strong>气候健康协会的新董事 Dr. Zong-Liang Yang 表示：“气候变化正在从根本上重塑影响人类……的环境条件。”</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, has an implied stance on the issue, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid0LPzu6neMFhCZgq9H7g9gfXAMBkrk4c5mCVQ3n3Jo2K2GZKwjRVHhVJwRbucKmjkCl&amp;id=61577251148103" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#4 / Facebook / topic: 美国是否应扩大液化天然气 LNG 出口？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>The Strait of Hormuz crisis exposed how limited existing strategic petroleum reserves were against a prolonged supply outage. With roughly 20% of global petroleum flows affected, the disruption stranded more than 10 million barrels a day and pushed crude above US$100 a barrel._Go...</div>
+<div class="sample-text"><strong>中文译文：</strong>霍尔木兹海峡危机暴露出，现有战略石油储备在长期供应中断面前十分有限。约 20% 的全球石油流动受到影响，超过每天 1000 万桶的供应受阻，并将原油价格推高到每桶 100 美元以上。各国政府正在重新调整能源安全设置。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents factual information related to energy security, and has medium discussion potential as it could lead to discussions on energy strategies.</div>
+<div class="sample-text"><a href="https://www.facebook.com/DiscoveryAlert/posts/pfbid022UyPdPCPKNeUAQfKsnr8QCdWoYa8M8EDJtV2LcTMyG7WhL8naKbcKdC17fGeaQMsl?__cft__[0]=AZYH2taS3W14Dbi4hfxTd9kHzA38e8Q-ufH12BeAgUMven9toIZu4O1omgtjVPTLveis95FoZimvokbmV7WgQFoFzHbTNuj-31-VvgaOLiOxPgsP9iDx673DNg7v-OiwALgy0Ksl7hbw46VQ_u4F69RoUUNCdfByFWmdbqmzRdVAiXDZViH3YxJOAyxYbc5I0XM&amp;__tn__=%2CO%2CP-R" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#5 / Instagram / topic: 大学生是否应更容易获得 SNAP 食品援助？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>🧑🏻‍💻 It&#x27;s Hunger Awareness Month and this week we&#x27;re talking about YOU, your FRIENDS, and your CLASSMATES. Despite a widespread lack of awareness of student food insecurity, emerging research suggests that #studentfoodinsecurity is on the rise 📈. 💭 There are also deeply-held idea...</div>
+<div class="sample-text"><strong>中文译文：</strong>现在是“饥饿意识月”，本周我们关注你、你的朋友和你的同学。尽管人们普遍缺乏对学生食物不安全问题的认识，新兴研究显示学生食物不安全正在上升。许多根深蒂固的观念也让真正改变更难实现。尤其是在 COVID-19 背景下，依靠工作补贴收入的学生可能更容易面临食物不安全。USC Food Support Services 希望澄清关于学生饥饿的常见误解，并邀请大家讨论长期有效的解决方案。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents factual information and invites discussion on solutions without taking a clear stance, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://www.instagram.com/p/CFApvwahkp4/" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#6 / Instagram / topic: 大学生是否应更容易获得 SNAP 食品援助？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>This is much higher than the average 1 in 7 rate in Canada. International students in particular face higher rates of food insecurity, possibly due to higher tuition costs (about 4x the rate of domestic tuition), and limits on how many hours they can work per week. Source: https:...</div>
+<div class="sample-text"><strong>中文译文：</strong>这远高于加拿大平均七分之一的比例。国际学生面临食物不安全的比例尤其高，可能是因为学费更高（约为本地学生学费的 4 倍），同时每周可工作时数受限。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents factual information that implies a stance by highlighting the issue, and has medium discussion potential as it could lead to debates about policy solutions.</div>
+<div class="sample-text"><a href="https://www.instagram.com/p/CcQLLqlNH-d/" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+</div>
+</section>
+
+<section>
+<h2>随机保留样本人工审查</h2>
+<p class="hint">从当前 llm_final_keep=true 的 6,707 条记录中随机抽取 30 条；固定随机种子 20260709，便于复现。每条保留英文原文片段，并补充中文译文供人工审查。</p>
+<div class="samples">
+<div class="sample">
+<div class="sample-meta">#1 / YouTube / topic: 平台是否应承担更严格的儿童网络安全保护责任？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Kids Online Safety Update (with Patrick Lyden) If you&#x27;re completely uneducated on the legislative process (like me) but concerned about kids online safety (like me), this is the video for you. I brought in former Congressional staffer and policy expert Patrick Lyden to get us par...</div>
+<div class="sample-text"><strong>中文译文：</strong>儿童网络安全最新进展（Patrick Lyden）。如果你像我一样不熟悉立法流程，但又担心儿童网络安全，这个视频适合你。我请来前国会工作人员、政策专家 Patrick Lyden，帮助家长了解联邦层面正在审查的 9 项网络安全法案。即使不了解法案细节，也可以联系州议员表达你对孩子网络安全的担忧。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The video is strongly relevant to the topic, expresses a supportive stance towards stricter platform responsibilities for children&#x27;s online safety, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=ZlFgAvWQDTA" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#2 / X / topic: 美国是否应扩大可负担住房供给？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>If we deport 20 million illegal aliens, Americans won&#x27;t have a housing crisis. Less demand &amp; more supply.</div>
+<div class="sample-text"><strong>中文译文：</strong>如果我们驱逐 2000 万非法移民，美国人就不会有住房危机。需求会减少，供给会增加。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, takes a clear stance against expanding affordable housing supply, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://x.com/ScottPresler/status/2041197552574332932" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#3 / YouTube / topic: 避孕服务是否应免除自付费用？ / relevance: strongly_relevant / stance: support / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>We Still Need Access to Contraception, Even in a Pandemic All people, regardless of where they live, have the right to decide whether and when to have children, to exist free from fear and stigma and to live the lives they choose. Even in a global pandemic. Pathfinder&#x27;s pandemic ...</div>
+<div class="sample-text"><strong>中文译文：</strong>即使在疫情期间，我们仍然需要获得避孕服务。所有人，无论住在哪里，都有权决定是否以及何时生育，有权摆脱恐惧和污名，过自己选择的生活。Pathfinder 的疫情应对工作帮助女性、女孩和社区度过危机，并变得更强韧。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear stance in support of access to contraception, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=FOjOTyC-wvY" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#4 / YouTube / topic: 美国是否应加强边境技术和监控？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Texas Democrats and Republicans unite to block border wall in Big Bend National Park Bipartisan blowback from elected officials in Texas has stalled the Trump administration&#x27;s plans to erect a border wall through Big Bend National Park in West Texas. Following outcry from Democra...</div>
+<div class="sample-text"><strong>中文译文：</strong>得州民主党人和共和党人联合阻止在大弯国家公园修建边境墙。得州民选官员的跨党派反对使特朗普政府在西得州大弯国家公园修建边境墙的计划受阻。国土安全部后来转向使用技术手段监控美墨边境，而不是建 30 英尺高的钢墙。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents factual information with a neutral stance, and has medium discussion potential regarding the policy decision and bipartisan cooperation.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=YAEvqqKm9Q0" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#5 / YouTube / topic: 是否应扩大免费学校餐？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>SSP MSP Frances Curran- Free School Meals Bill Part 2 SSP MSP Frances Curran Speaks on the Free School Meals Bill. We fight on for Free School Meals Campaigners for free school meals have declared their intention to use every possible opportunity in the Scottish Parliament to sec...</div>
+<div class="sample-text"><strong>中文译文：</strong>苏格兰社会主义党议员 Frances Curran 就免费学校餐法案发言。免费学校餐活动人士表示，将利用苏格兰议会的一切机会推动立法，让所有苏格兰小学生都有权免费获得健康学校餐。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, has a clear stance of support, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=o5PpXeO5aYU" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#6 / YouTube / topic: 信用卡滞纳金是否应被限制？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>CFPB Slashes Credit Card Late Fees 2026: What You Need to Know Now The CFPB just cut typical credit card late fees by 75% in April 2026. This changes everything about how you handle missed payments and credit card strategy. In this video, we break down the new rule, what it means...</div>
+<div class="sample-text"><strong>中文译文：</strong>CFPB 在 2026 年大幅削减信用卡滞纳金：你需要知道什么。CFPB 将典型信用卡滞纳金削减 75%，从 32 美元降至 8 美元。视频解释新规则对个人钱包和信用卡策略的影响，以及银行可能如何应对。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The video is strongly relevant to the topic, presents a neutral stance on the CFPB&#x27;s new rule, and has high discussion potential due to the policy implications and personal finance relevance.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=sKh7zUBIyvE&amp;pp=0gcJCQwBg6NKuzgg" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#7 / YouTube / topic: 是否应提高联邦最低工资？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>How a &#x27;Living Wage&#x27; Program Can Impact the Cleaning Industry Employers want to pay their workers a wage that is competitive and provides them with a decent quality of life for working families. But often the thought of paying higher wages means losing contracts or failing to land...</div>
+<div class="sample-text"><strong>中文译文：</strong>“生活工资”项目如何影响清洁行业。雇主希望给员工支付有竞争力、能让工薪家庭过上体面生活的工资，但担心提高工资会失去合同。视频说明如何实施生活工资项目，让工人、雇主和社区都受益。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents a clear stance in support of the &#x27;living wage&#x27; program, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=6wsUfJpWaD0" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#8 / Instagram / topic: 是否应提供带薪家庭假和育儿假？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Burnout can convince people they only have two choices: keep pushing or walk away. For many workers, that&#x27;s where the fear begins. They&#x27;re exhausted. Their mental health is suffering. They&#x27;re struggling to keep up. Yet they continue showing up because they don&#x27;t realize there may...</div>
+<div class="sample-text"><strong>中文译文：</strong>职业倦怠会让人以为只有两个选择：继续硬撑，或者离职。许多员工已经精疲力尽、心理健康受损，却仍继续上班，因为他们不知道自己可能有保护。了解 FMLA 很重要，因为它可能为符合条件的员工提供受工作保护的休假。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic of paid family and parental leave, takes a supportive stance towards such policies, and has high potential to invite public discussion about workplace rights and mental health.</div>
+<div class="sample-text"><a href="https://www.instagram.com/p/DZiJ4jXnI8g/" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#9 / YouTube / topic: IVF 等辅助生殖治疗是否应获得更多公共支持？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Can Ontario Make Fertility Care Fair? | The Rundown For a lot of Ontarians, fertility care is simply out of reach. But the provincial government says it is trying to change that. Ontario currently covers one cycle of in vitro fertilization and is committing $250 million over thre...</div>
+<div class="sample-text"><strong>中文译文：</strong>安大略能否让生育治疗更公平？对许多安大略人来说，生育治疗遥不可及。省政府表示正在改变这种情况，目前覆盖一次体外受精，并承诺三年投入 2.5 亿加元扩大参与诊所数量，同时还有相关税收抵免。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents factual information with a neutral stance, and has high discussion potential by addressing the effectiveness and reach of current IVF funding policies.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=4td2Bxo_BsE" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#10 / X / topic: 是否应提高联邦最低工资？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>If Trump had his way, the federal minimum wage would be $0. https://t.co/gVa1Mlrj3X</div>
+<div class="sample-text"><strong>中文译文：</strong>如果按特朗普的想法，联邦最低工资会是 0 美元。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear stance against raising the federal minimum wage, and has high potential to spark discussion.</div>
+<div class="sample-text"><a href="https://x.com/HillaryClinton/status/730172729291345920" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#11 / X / topic: 大学生是否应更容易获得 SNAP 食品援助？ / relevance: strongly_relevant / stance: oppose / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>All time high markets Lowest jobless claims since 73 1.5M fewer people on food stamps you Consumer confidence through roof Media: Crickets</div>
+<div class="sample-text"><strong>中文译文：</strong>市场创历史新高，失业申请人数为 1973 年以来最低，领取食品券的人减少 150 万，消费者信心高涨；媒体却一片沉默。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, has a stance against easier access to SNAP for college students, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://x.com/DonaldJTrumpJr/status/923529374938402816" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#12 / X / topic: 是否应加强警察问责并限制 qualified immunity？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>&quot;Let&#x27;s get it done next month, by the first anniversary of George Floyd&#x27;s death&quot;, says @POTUS in urging Congress to pass the George Floyd Justice in Policing Act. 👏🏾👏🏾👏🏾#JointSession</div>
+<div class="sample-text"><strong>中文译文：</strong>“让我们下个月，也就是 George Floyd 去世一周年前把它办成，”总统敦促国会通过《George Floyd 警务正义法案》。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear stance of support, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://x.com/AttorneyCrump/status/1387605203025862659" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#13 / Instagram / topic: 是否应扩大免费学校餐？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Thank you @hungersolutionsny for your leadership and partnership to end hunger in New York! Sharing your powerful words and our victories: Collective action is at the center of our work to fight hunger. Here&#x27;s a glimpse of what our collaborations with community-based organization...</div>
+<div class="sample-text"><strong>中文译文：</strong>感谢 Hunger Solutions NY 在纽约消除饥饿工作中的领导和合作。集体行动是反饥饿工作的核心。今年合作成果包括：为 270 万学生提供免费学校餐，使纽约成为第九个提供普遍学校餐的州；帮助 3 万多名纽约人通过营养外展加入 SNAP。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear supportive stance towards universal school meals, and has high potential for discussion due to its focus on policy implementation and advocacy.</div>
+<div class="sample-text"><a href="https://www.instagram.com/p/DO_hMqTkWXf/" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#14 / X / topic: 政府是否应扩大纳洛酮等阿片过量急救药的获取？ / relevance: strongly_relevant / stance: support / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>A month after installing these refurbished newspaper stands filled with naloxone, almost 900 cartons have been dispensed. Last week there were zero fatal opioid overdoses. It&#x27;s possible one of those cartons saved a life. That&#x27;s why we do this work.￼ https://t.co/B0mJDk7Day</div>
+<div class="sample-text"><strong>中文译文：</strong>安装这些装有纳洛酮的翻新报箱一个月后，已经发放近 900 盒。上周没有发生致命阿片类药物过量事件。可能其中一盒就救了一条命。这就是我们做这项工作的原因。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear stance in support of expanding access to naloxone, and has medium potential for discussion about the policy implications of such actions.</div>
+<div class="sample-text"><a href="https://x.com/zellieimani/status/2064138511779872787" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#15 / YouTube / topic: 是否应提高联邦最低工资？ / relevance: strongly_relevant / stance: support / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Living Wage Week - Why the Real Living Wage matters Hear from Chair of The Living Wage Foundation&#x27;s Recognised Service Provider forum - Karen Pleva. Read Karen&#x27;s recent blog to find out why Karen is a supporter of paying the real Living Wage and why she strongly believes in this ...</div>
+<div class="sample-text"><strong>中文译文：</strong>生活工资周：为什么真正的生活工资很重要。The Living Wage Foundation 认可服务提供商论坛主席 Karen Pleva 解释为什么她支持支付真正的生活工资，并坚信这一事业。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, has a clear stance in support of paying the real Living Wage, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=6b0et_CPa1g" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#16 / X / topic: 跨性别运动员是否应参加女子体育项目？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Did you know: A transgender man just won NCAA female conference athlete of the week in the Big Sky conference RT if biological men should not be allowed to compete in women&#x27;s sports!</div>
+<div class="sample-text"><strong>中文译文：</strong>你知道吗：一名跨性别男性刚刚获得 NCAA Big Sky 联盟女子项目本周最佳运动员。转发如果你认为生理男性不应参加女子体育比赛。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, has a clear stance against transgender men competing in women&#x27;s sports, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://x.com/charliekirk11/status/1188287035569688576" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#17 / X / topic: 政府是否应补贴家庭净水设备以应对 PFAS 等污染？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>The EPA is trying to destroy one of the best water filtering systems on the market that can remove PFOA/PFAS, as well as other toxins like fluoride and even cesium-137, by arbitrarily classifying the technology used by Berkey filters as a pesticide, rather than a water filter. ht...</div>
+<div class="sample-text"><strong>中文译文：</strong>美国环保署正试图打击市场上最好的滤水系统之一。该系统可以去除 PFOA/PFAS 以及氟化物、铯-137 等毒素，但 EPA 却武断地把 Berkey 滤水器使用的技术归类为杀虫剂，而不是滤水器。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear stance against the EPA&#x27;s classification, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://x.com/Inversionism/status/1702039502838022440" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#18 / X / topic: 大学生是否应更容易获得 SNAP 食品援助？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Should illegal immigrants and their children be banned from food stamps etc? ❓❓❓ https://t.co/pwGJMiOuPM</div>
+<div class="sample-text"><strong>中文译文：</strong>非法移民及其子女是否应被禁止领取食品券等福利？</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic of SNAP eligibility, has a neutral or factual stance that invites discussion, and has high discussion potential. It meets all the criteria for inclusion in the dataset.</div>
+<div class="sample-text"><a href="https://x.com/gman5180/status/1970962715628978206" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#19 / YouTube / topic: 政府是否应保护堕胎服务的可及性？ / relevance: strongly_relevant / stance: support / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>U.S. Democratic-Led House Passes Abortion Rights Law WASHINGTON DC – The U.S. House has approved a bill that Democrats drafted to protect a person&#x27;s access to abortion amid an all-out attack by Republican lawmakers with the complicity of a conservative majority Supreme Court. The...</div>
+<div class="sample-text"><strong>中文译文：</strong>美国民主党主导的众议院通过堕胎权利法案。众议院批准了民主党起草的法案，以保护人们获得堕胎服务的权利。该法案旨在确保各地平等获得堕胎服务，并保护提供者免受不必要的医疗限制干扰。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear supportive stance towards government protection of abortion services, and has high discussion potential due to the controversial nature of the issue and the political context pro...</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=7VXlzWqHm6Q" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#20 / YouTube / topic: 美国是否应加强移民执法和庇护限制？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Why Indian Immigrants Are TARGETED by ICE Raids in San Francisco #indianimmigrants #usimmigrationnews #iceraids ICE raids are hitting major U.S. cities, and Indian immigrants on F1, H1B, or green cards must stay alert. Recent enforcement actions in New York, Chicago, and Los Ange...</div>
+<div class="sample-text"><strong>中文译文：</strong>为什么印度移民成为旧金山 ICE 突袭目标。ICE 突袭正在影响美国主要城市，持 F1、H1B 或绿卡的印度移民需要保持警惕。视频说明突袭发生地点、学生和工作者如何保持合规、旅行风险、文件准备和再入境建议。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The video is strongly relevant to the topic, expresses a clear stance against strengthening immigration enforcement, and has high potential for discussion and engagement.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=58oF85wOpKs" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#21 / X / topic: 是否应提高联邦最低工资？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Senate votes: 78-17 for a $10 billion bailout to Jeff Bezos 90-5 for a $125 billion corporate tax break 87-6 for $53 billion to corporate outsourcers 88-11 for $780 billion to war profiteers 58-42 against a $15 minimum wage Welcome to the United States of Oligarchy.</div>
+<div class="sample-text"><strong>中文译文：</strong>参议院投票：780 亿美元给 Jeff Bezos 的救助、1250 亿美元企业税收优惠、530 亿美元给外包企业、7800 亿美元给战争获利者；但以 58 对 42 反对 15 美元最低工资。欢迎来到寡头美国。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic of whether the federal minimum wage should be raised. It has a clear stance of opposition to raising the minimum wage and presents information that is likely to invite public discussion and debate.</div>
+<div class="sample-text"><a href="https://x.com/GunnelsWarren/status/1523036745264107521" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#22 / YouTube / topic: 是否应延续或扩大医保保费补贴？ / relevance: strongly_relevant / stance: unclear / discussion: medium / confidence: 0.85</div>
+<div class="sample-text"><strong>原文：</strong>Maine bar owner worries as ACA subsidies face uncertain future Enhanced premium tax credits that discount healthcare premiums that are offered through the Affordable Care Act marketplace are set to expire in December.</div>
+<div class="sample-text"><strong>中文译文：</strong>缅因州酒吧老板担心 ACA 补贴前景不确定。通过《平价医疗法案》市场提供、用于降低医保保费的增强型保费税收抵免将于 12 月到期。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a stance of concern, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=EBssHyXCY_0" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#23 / X / topic: 政府是否应保护堕胎服务的可及性？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>MAGA: we believe in states rights KANSAS: we&#x27;re refusing to ban reproductive rights in our state constitution MAGA: except that OHIO: we&#x27;re protecting reproductive rights in our state constitution MAGA: and that COLORADO: trump is disqualified MAGA: no more states rights!!!</div>
+<div class="sample-text"><strong>中文译文：</strong>MAGA 说相信州权；堪萨斯拒绝在州宪法中禁止生殖权利，MAGA 又说“除了这个”；俄亥俄在州宪法中保护生殖权利，MAGA 又反对；科罗拉多取消特朗普资格，MAGA 又说不要州权了。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a clear stance against MAGA&#x27;s position, and has high potential for public discussion.</div>
+<div class="sample-text"><a href="https://x.com/TristanSnell/status/1737318366593843380" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#24 / YouTube / topic: 美国是否应对芬太尼采取更严格管制和刑事打击？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>The Legal Pill That Mirrors Methamphetamine | History of Adderall | History for Sleep In this video, we trace the complete history of Adderall — from a forgotten molecule synthesized in Berlin in 1887, to the wartime stimulant that fueled World War II, to the rebranded diet pill ...</div>
+<div class="sample-text"><strong>中文译文：</strong>与甲基苯丙胺相似的合法药丸：Adderall 的历史。视频追溯 Adderall 从 1887 年柏林合成的分子，到二战兴奋剂、1996 年改名后的减肥药和儿童用药，再到 2022 年短缺推动黑市、许多药片含有致命剂量芬太尼的历史。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The video is strongly relevant to the topic, takes a clear stance against strict regulation and criminal penalties for fentanyl, and has high discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=24Q_oLW6oOw" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#25 / YouTube / topic: 医疗债务是否不应影响个人信用记录？ / relevance: relevant / stance: support / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Senator works on medical debt reports Senator Jeff Markey is working to get medical debt removed from Oregonian&#x27;s credit cards.</div>
+<div class="sample-text"><strong>中文译文：</strong>参议员推动处理医疗债务报告。Jeff Markey 参议员正在努力让医疗债务从俄勒冈居民的信用记录中移除。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is relevant to the topic, expresses a stance in support of removing medical debt from credit records, and has medium discussion potential as it touches on a public policy issue.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=MzUxJJfRoE0" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#26 / YouTube / topic: 美国是否应扩大可负担住房供给？ / relevance: strongly_relevant / stance: oppose / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Affordable-housing scam: 3 women accused of accepting nearly $900K in bribes to take people off wait They took nearly $900,000 in bribe money that ensured that the people who paid it didn`t have to wait years on a waiting list for affordable housing, according to prosecutors. Now...</div>
+<div class="sample-text"><strong>中文译文：</strong>可负担住房骗局：三名女性被控收受近 90 万美元贿赂，让人从等待名单中被移除。检方称，她们收钱让付款者不用在可负担住房等待名单上等多年，目前三人已被拘押，调查仍在扩大。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic of affordable housing, expresses a clear stance against the scam, and has medium discussion potential regarding the integrity of housing programs.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=lRHS4evhh-0" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#27 / YouTube / topic: 医疗债务是否不应影响个人信用记录？ / relevance: strongly_relevant / stance: support / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Fix Medical Debt Before It Gets Worse</div>
+<div class="sample-text"><strong>中文译文：</strong>在医疗债务变得更糟之前先解决它。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, expresses a stance in support of a policy change regarding medical debt, and has medium potential for discussion. It meets all the criteria for inclusion in the dataset.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=CY3yDu_nGeQ" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#28 / YouTube / topic: 美国是否应征收或避免征收碳税？ / relevance: strongly_relevant / stance: neutral_or_factual / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Trudeau, Poilievre spar over carbon pricing exemption as topic heats up Parliament Canada&#x27;s Prime Minister Justin Trudeau and the leader of the Conservative Party Pierre Poilievre on Tuesday debated the government&#x27;s exemption on carbon pricing for home heating oil, which was anno...</div>
+<div class="sample-text"><strong>中文译文：</strong>特鲁多和博励治围绕碳定价豁免展开交锋，议会中该议题升温。加拿大总理特鲁多和保守党领袖 Pierre Poilievre 就政府对家庭取暖油的碳定价豁免进行辩论。特鲁多称取暖油在全国都有使用，且污染更重、排放更高。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, presents a balanced view of the debate (indicating a neutral stance), and covers a contentious issue with high potential for public discussion.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=sNNikukOKvE" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#29 / YouTube / topic: 跨性别运动员是否应参加女子体育项目？ / relevance: strongly_relevant / stance: oppose / discussion: high / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Transgender Athlete Competing Against Girls Gets HECKLED Transgenders in women&#x27;s sports continues to be an issue but it seems some people are pushing back. Stream episode 1 of SEPARATED today: https://separated.dailycaller.com/opt... Watch &quot;Pedo Hunters&quot; Here: https://pedohunters...</div>
+<div class="sample-text"><strong>中文译文：</strong>跨性别运动员与女孩比赛时遭到嘲讽。跨性别者参加女子体育仍是争议议题，但似乎有人开始反对。视频来自 Daily Caller，并附带其节目和订阅链接。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, takes an implied stance of opposition to transgender athletes competing in women&#x27;s sports, and has high discussion potential due to the controversial nature of the issue.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=WikpE60kAAU" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+<div class="sample">
+<div class="sample-meta">#30 / YouTube / topic: 是否应延续低收入家庭宽带补贴？ / relevance: strongly_relevant / stance: support / discussion: medium / confidence: 0.95</div>
+<div class="sample-text"><strong>原文：</strong>Rep. Brandon Williams introduces legislation to save and fund the Affordable Connectivity Program -- Subscribe for more videos: / @repwilliams → https://brandonwilliams.house.gov → / repwilliams → / repbrandonwilliams → / repbrandonwilliams</div>
+<div class="sample-text"><strong>中文译文：</strong>众议员 Brandon Williams 提出法案，以挽救并资助“可负担连接计划”（Affordable Connectivity Program）。</div>
+<div class="sample-text"><strong>LLM 原因：</strong>The post is strongly relevant to the topic, has a clear stance of support for the Affordable Connectivity Program, and has medium discussion potential.</div>
+<div class="sample-text"><a href="https://www.youtube.com/watch?v=c9mtfcLSgw0" target="_blank" rel="noopener noreferrer">打开原始链接</a></div>
+</div>
+</div>
+</section>
+<p class="footer">报告由当前本地 CSV 自动生成。数值中的“成功口径”均排除了 llm_error 非空记录。</p>
+</main></body></html>
