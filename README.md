@@ -58,6 +58,8 @@ bash scripts/start_vllm_8gpu_qwen32b.sh
 
 两份 32B 权重默认按顺序加载：8000 就绪后才会开始加载 8001，以降低主机内存峰值。若确认服务器 RAM 充足，可用 `START_SEQUENTIALLY=0` 改回并行加载。
 
+启动脚本会先对每个 GPU 组运行一次轻量 CUDA 预检。若出现 `error 802: system not yet initialized`，这是驱动/Fabric 初始化问题，不是模型或筛选代码问题；先修复服务器 GPU 状态再启动。
+
 另开一个终端，先小样本试跑：
 
 ```bash

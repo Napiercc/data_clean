@@ -26,6 +26,8 @@ bash scripts/start_vllm_8gpu_qwen32b.sh
 
 默认先加载 8000、待其就绪后再加载 8001，以避免两份 32B 权重同时占满主机内存。确认 RAM 充足时才使用 `START_SEQUENTIALLY=0` 并行加载。
 
+脚本会在加载权重前执行 CUDA 预检。若预检报 `error 802`，先检查 NVIDIA 驱动与 Fabric Manager 状态；更改模型并发或 TP 参数不会解决该错误。
+
 默认启动 2 个 TP4 服务，使用全部 8 张卡：
 
 ```text

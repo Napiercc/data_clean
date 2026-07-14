@@ -44,6 +44,34 @@ PY
   return 1
 }
 
+check_cuda_group() {
+  local gpu_group="$1"
+  if ! CUDA_VISIBLE_DEVICES="$gpu_group" python - <<'PY'
+import sys
+
+try:
+    import torch
+
+    if not torch.cuda.is_available():
+        raise RuntimeError("torch.cuda.is_available() returned false")
+    device_count = torch.cuda.device_count()
+    if device_count < 1:
+        raise RuntimeError("no CUDA devices are visible")
+    for index in range(device_count):
+        torch.cuda.set_device(index)
+        torch.empty(1, device=f"cuda:{index}")
+    torch.cuda.synchronize()
+    print(f"CUDA preflight passed for {device_count} visible GPU(s)")
+except Exception as exc:
+    print(f"CUDA preflight failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+    raise SystemExit(1)
+PY
+  then
+    echo "CUDA is not ready for GPU group ${gpu_group}. Fix the driver/Fabric Manager state before starting vLLM." >&2
+    return 1
+  fi
+}
+
 read -r -a gpu_groups <<< "$GPU_GROUPS"
 
 for group_index in "${!gpu_groups[@]}"; do
@@ -53,6 +81,8 @@ for group_index in "${!gpu_groups[@]}"; do
   port=$((BASE_PORT + group_index))
   log_file="${LOG_DIR}/vllm_group${group_index}_tp${tensor_parallel_size}_port${port}.log"
   pid_file="${PID_DIR}/vllm_group${group_index}_tp${tensor_parallel_size}_port${port}.pid"
+  echo "Checking CUDA for GPU group ${group_index} (${gpu_group})..."
+  check_cuda_group "$gpu_group"
   echo "Starting GPU group ${group_index} (${gpu_group}) with TP=${tensor_parallel_size} on port ${port}; log: ${log_file}"
   CUDA_VISIBLE_DEVICES="$gpu_group" nohup python -m vllm.entrypoints.openai.api_server \
     --model "$MODEL" \
