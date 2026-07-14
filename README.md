@@ -1,6 +1,6 @@
 # Server LLM Post Filter
 
-这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本默认使用最后 4 张卡 GPU 4-7 运行 vLLM tensor parallel，默认模型路径是 `../models/Qwen3-32B`。
+这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本默认把 8 张卡拆成两套 TP4 vLLM 副本：GPU 0-3 使用端口 8000，GPU 4-7 使用端口 8001；默认模型路径是 `../models/Qwen3-32B`。
 
 服务器目录结构应为：
 
@@ -33,7 +33,7 @@ AND discussion_potential in high / medium
 
 - `llm_post_filter.py`：唯一 Python 主程序，负责动态并发推理、失败重试、结果续跑与汇总。
 - `input/post_relevance_filtered.csv`：规则筛选后的 posts-only 输入数据。
-- `scripts/start_vllm_8gpu_qwen32b.sh`：默认启动 1 个 TP4 vLLM 服务，GPU `4,5,6,7` 使用端口 `8000`。
+- `scripts/start_vllm_8gpu_qwen32b.sh`：默认启动 2 个 TP4 vLLM 服务，GPU `0-3` 使用端口 `8000`，GPU `4-7` 使用端口 `8001`。
 - `scripts/run_sample_8gpu_vllm.sh`：小样本动态并发试跑。
 - `scripts/run_full_8gpu_vllm.sh`：正式全量动态并发运行。
 - `scripts/stop_vllm_8gpu.sh`：停止已启动的 vLLM 服务。
@@ -47,11 +47,14 @@ AND discussion_potential in high / medium
 cd data_clean
 ```
 
-启动 GPU 4-7 上的 vLLM 服务：
+启动两套 TP4 vLLM 服务：
 
 ```bash
+bash scripts/stop_vllm_8gpu.sh
 bash scripts/start_vllm_8gpu_qwen32b.sh
 ```
+
+第一次从旧的单 TP4 配置切换到当前双 TP4 配置时，必须先停止旧服务，避免端口 `8000` 或 GPU `4-7` 被占用。
 
 另开一个终端，先小样本试跑：
 
@@ -68,7 +71,7 @@ bash scripts/run_full_8gpu_vllm.sh
 运行过程中主终端会定时显示总进度：
 
 ```text
-2026-07-08 12:00:00 progress: success 1250/29019 (4%), attempted: 1260, errors: 10, worker pool: 16
+2026-07-08 12:00:00 progress: success 1250/29019 (4%), attempted: 1260, errors: 10, worker pool: 24 across 2 endpoints
 ```
 
 默认每 15 秒刷新一次，可以用 `PROGRESS_INTERVAL` 调整：
@@ -114,14 +117,14 @@ output/qwen32b_8gpu/merged/llm_post_relevance_filtered.csv
 
 所有运行脚本都启用了 `--resume`，中断后可以直接重新运行对应命令续跑。正式运行首次会导入旧 `shard_*` 目录的结果，之后以 `output/qwen32b_8gpu/dynamic/` 作为续跑状态；成功行会跳过，`llm_error` 行会重试。
 
-运行脚本会在开始前检查默认 endpoint `8000` 的 `/v1/models` 是否可用。如果 vLLM 服务未就绪，脚本会直接退出，不会把整批请求写成失败结果。即使仍有错误行，脚本也会先把最新结果发布到 `merged/`；下一次运行会继续重试。若需要把残留错误当作命令失败，可设置 `FAIL_ON_ERRORS=1`。
+运行脚本会在开始前检查默认 endpoints `8000` 和 `8001` 的 `/v1/models` 是否可用。如果任一 vLLM 服务未就绪，脚本会直接退出，不会把整批请求写成失败结果。即使仍有错误行，脚本也会先把最新结果发布到 `merged/`；下一次运行会继续重试。若需要把残留错误当作命令失败，可设置 `FAIL_ON_ERRORS=1`。
 
-默认运行一个 16 路请求的共享 worker 池，持续从同一任务队列领取工作，因此先完成的旧 shard 不会造成 GPU 空闲或剩余任务近乎停滞。Qwen3 的 thinking 模式默认开启；单条帖子截断为 2500 字符，输出上限为 1024 tokens。若服务器把 thinking 内容内联在响应中，程序会在解析最终 JSON 前剥离 `<think>...</think>` 段。
+默认运行一个 24 路请求的共享 worker 池，持续从同一任务队列领取工作，并按两个 vLLM 服务当前 in-flight 请求数自动均衡。这样两套 TP4 模型可同时推理，先完成的任务也不会造成剩余任务近乎停滞。Qwen3 的 thinking 模式默认开启；单条帖子截断为 2500 字符，输出上限为 1024 tokens。若服务器把 thinking 内容内联在响应中，程序会在解析最终 JSON 前剥离 `<think>...</think>` 段。
 
 可按显存和吞吐调整并发，例如：
 
 ```bash
-WORKERS=24 bash scripts/run_full_8gpu_vllm.sh
+WORKERS=32 bash scripts/run_full_8gpu_vllm.sh
 ```
 
-如果出现明显的排队超时或显存压力，先降到 `WORKERS=12`。vLLM 默认允许 32 个并发序列，可用 `MAX_NUM_SEQS` 在启动服务时调整。
+如果出现明显的排队超时或显存压力，先降到 `WORKERS=16`。每个 vLLM 副本默认允许 32 个并发序列，可用 `MAX_NUM_SEQS` 在启动服务时调整。

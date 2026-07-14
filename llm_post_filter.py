@@ -29,6 +29,7 @@ import json
 import os
 import random
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -156,6 +157,12 @@ def parse_args() -> argparse.Namespace:
         "--base_url",
         default="http://localhost:8000/v1",
         help="API base URL. For vLLM use its OpenAI-compatible /v1 base, for example http://localhost:8000/v1.",
+    )
+    parser.add_argument(
+        "--base_urls",
+        nargs="+",
+        default=[],
+        help="One or more vLLM API base URLs. Overrides --base_url and balances requests across them.",
     )
     parser.add_argument("--api_key_env", default="VLLM_API_KEY", help="Optional API key environment variable for the vLLM endpoint.")
     parser.add_argument("--limit", type=int, default=0, help="Maximum number of rows to process after sampling. 0 means all.")
@@ -354,21 +361,59 @@ def chat_completion_payload(row: Dict[str, str], args: argparse.Namespace) -> Di
     return payload
 
 
-def preflight_api(args: argparse.Namespace, api_key: str) -> None:
-    url = args.base_url.rstrip("/") + "/models"
-    request = urllib.request.Request(
-        url,
-        method="GET",
-        headers={"Authorization": f"Bearer {api_key}"},
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=min(args.timeout, 10)) as resp:
-            resp.read()
-    except Exception as exc:
-        raise SystemExit(
-            f"API preflight failed for {url}: {type(exc).__name__}: {exc}. "
-            "Start or fix the vLLM service before running the filter."
+def configured_base_urls(args: argparse.Namespace) -> List[str]:
+    raw_urls = args.base_urls or [args.base_url]
+    urls = [url.strip().rstrip("/") for url in raw_urls if url and url.strip()]
+    if not urls:
+        raise SystemExit("At least one non-empty vLLM base URL is required.")
+    return list(dict.fromkeys(urls))
+
+
+class EndpointPool:
+    """Choose the least busy vLLM endpoint for each request attempt."""
+
+    def __init__(self, base_urls: List[str]) -> None:
+        self.base_urls = base_urls
+        self._in_flight = [0] * len(base_urls)
+        self._next_index = 0
+        self._lock = threading.Lock()
+
+    def acquire(self) -> Tuple[int, str]:
+        with self._lock:
+            lowest = min(self._in_flight)
+            for offset in range(len(self.base_urls)):
+                index = (self._next_index + offset) % len(self.base_urls)
+                if self._in_flight[index] == lowest:
+                    self._in_flight[index] += 1
+                    self._next_index = (index + 1) % len(self.base_urls)
+                    return index, self.base_urls[index]
+        raise RuntimeError("No vLLM endpoint is available.")
+
+    def release(self, index: int) -> None:
+        with self._lock:
+            self._in_flight[index] = max(0, self._in_flight[index] - 1)
+
+    def in_flight_summary(self) -> str:
+        with self._lock:
+            return "/".join(str(count) for count in self._in_flight)
+
+
+def preflight_api(args: argparse.Namespace, api_key: str, base_urls: List[str]) -> None:
+    for base_url in base_urls:
+        url = base_url + "/models"
+        request = urllib.request.Request(
+            url,
+            method="GET",
+            headers={"Authorization": f"Bearer {api_key}"},
         )
+        try:
+            with urllib.request.urlopen(request, timeout=min(args.timeout, 10)) as resp:
+                resp.read()
+        except Exception as exc:
+            raise SystemExit(
+                f"API preflight failed for {url}: {type(exc).__name__}: {exc}. "
+                "Start or fix every configured vLLM service before running the filter."
+            )
 
 
 def strip_thinking_content(text: str) -> str:
@@ -397,12 +442,15 @@ def extract_chat_output_text(response: Dict[str, Any]) -> str:
     return ""
 
 
-def call_vllm(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    url = args.base_url.rstrip("/") + "/chat/completions"
+def call_vllm(
+    row: Dict[str, str], args: argparse.Namespace, api_key: str, endpoint_pool: EndpointPool
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     payload = chat_completion_payload(row, args)
     sent_template_kwargs = "chat_template_kwargs" in payload
     last_error: Optional[str] = None
     for attempt in range(args.max_retries + 1):
+        endpoint_index, base_url = endpoint_pool.acquire()
+        url = base_url + "/chat/completions"
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(
             url,
@@ -414,28 +462,31 @@ def call_vllm(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> Tu
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=args.timeout) as resp:
-                raw = resp.read().decode("utf-8")
-            response = json.loads(raw)
-            output_text = extract_chat_output_text(response)
-            parsed = json.loads(output_text)
-            return parsed, response
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            last_error = f"HTTP {exc.code}: {detail[:1000]}"
-            if exc.code == 400 and sent_template_kwargs:
-                # Older vLLM versions may not accept this non-OpenAI extension.
-                payload.pop("chat_template_kwargs", None)
-                sent_template_kwargs = False
-                continue
-            if exc.code not in {408, 409, 429, 500, 502, 503, 504}:
+            try:
+                with urllib.request.urlopen(request, timeout=args.timeout) as resp:
+                    raw = resp.read().decode("utf-8")
+                response = json.loads(raw)
+                output_text = extract_chat_output_text(response)
+                parsed = json.loads(output_text)
+                return parsed, response
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", errors="replace")
+                last_error = f"HTTP {exc.code}: {detail[:1000]}"
+                if exc.code == 400 and sent_template_kwargs:
+                    # Older vLLM versions may not accept this non-OpenAI extension.
+                    payload.pop("chat_template_kwargs", None)
+                    sent_template_kwargs = False
+                    continue
+                if exc.code not in {408, 409, 429, 500, 502, 503, 504}:
+                    break
+            except json.JSONDecodeError as exc:
+                last_error = f"{type(exc).__name__}: {exc}"
+                # Repeating a deterministic malformed completion wastes several timeout windows.
                 break
-        except json.JSONDecodeError as exc:
-            last_error = f"{type(exc).__name__}: {exc}"
-            # Repeating a deterministic malformed completion wastes several timeout windows.
-            break
-        except (urllib.error.URLError, TimeoutError) as exc:
-            last_error = f"{type(exc).__name__}: {exc}"
+            except (urllib.error.URLError, TimeoutError) as exc:
+                last_error = f"{type(exc).__name__}: {exc}"
+        finally:
+            endpoint_pool.release(endpoint_index)
         if attempt < args.max_retries:
             time.sleep(min(60, 2**attempt))
     raise RuntimeError(last_error or "Unknown API error")
@@ -695,6 +746,7 @@ def write_prompt_preview(output_dir: Path, rows: List[Dict[str, str]], args: arg
     preview = {
         "model": args.model,
         "base_url": args.base_url,
+        "base_urls": configured_base_urls(args),
         "system_prompt": SYSTEM_PROMPT,
         "schema": OUTPUT_SCHEMA,
         "sample_count": len(rows),
@@ -706,10 +758,12 @@ def write_prompt_preview(output_dir: Path, rows: List[Dict[str, str]], args: arg
         write_csv(output_dir / "llm_selected_input_preview.csv", rows, fields)
 
 
-def process_row(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> Dict[str, Any]:
+def process_row(
+    row: Dict[str, str], args: argparse.Namespace, api_key: str, endpoint_pool: EndpointPool
+) -> Dict[str, Any]:
     key = row_key(row)
     try:
-        parsed, response = call_vllm(row, args, api_key)
+        parsed, response = call_vllm(row, args, api_key, endpoint_pool)
         out = result_row(row, parsed, response, args)
     except Exception as exc:
         out = result_row(row, None, None, args, error=str(exc))
@@ -717,7 +771,9 @@ def process_row(row: Dict[str, str], args: argparse.Namespace, api_key: str) -> 
     return out
 
 
-def run_rows(todo: List[Dict[str, str]], jsonl_path: Path, args: argparse.Namespace, api_key: str) -> None:
+def run_rows(
+    todo: List[Dict[str, str]], jsonl_path: Path, args: argparse.Namespace, api_key: str, endpoint_pool: EndpointPool
+) -> None:
     """Keep a fixed number of requests in flight until the shared queue is empty."""
     if not todo:
         return
@@ -734,7 +790,7 @@ def run_rows(todo: List[Dict[str, str]], jsonl_path: Path, args: argparse.Namesp
             row = next(iterator)
         except StopIteration:
             return False
-        pending.add(executor.submit(process_row, row, args, api_key))
+        pending.add(executor.submit(process_row, row, args, api_key, endpoint_pool))
         return True
 
     with jsonl_path.open("a", encoding="utf-8", buffering=1024 * 1024) as output_file:
@@ -763,7 +819,8 @@ def run_rows(todo: List[Dict[str, str]], jsonl_path: Path, args: argparse.Namesp
                         print(
                             f"processed {completed_count}/{len(todo)} | "
                             f"ok {success_count}, errors {error_count} | "
-                            f"{rate:.1f} rows/min | in flight {len(pending)}/{worker_count}"
+                            f"{rate:.1f} rows/min | workers {len(pending)}/{worker_count} | "
+                            f"endpoints {endpoint_pool.in_flight_summary()}"
                         )
                     if args.sleep:
                         time.sleep(args.sleep)
@@ -824,10 +881,14 @@ def main() -> None:
     print(f"To process: {len(todo)}")
     print(f"Output JSONL: {jsonl_path}")
 
-    if todo and not args.skip_preflight:
-        preflight_api(args, api_key)
+    base_urls = configured_base_urls(args)
+    endpoint_pool = EndpointPool(base_urls)
+    print(f"Endpoints: {', '.join(base_urls)}")
 
-    run_rows(todo, jsonl_path, args, api_key)
+    if todo and not args.skip_preflight:
+        preflight_api(args, api_key, base_urls)
+
+    run_rows(todo, jsonl_path, args, api_key, endpoint_pool)
 
     all_rows = dedupe_latest_rows(read_jsonl(jsonl_path))
     write_jsonl(jsonl_path, all_rows)

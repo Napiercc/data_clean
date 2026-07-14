@@ -7,7 +7,10 @@ RUN_DIR="${RUN_DIR:-output/qwen32b_8gpu_sample}"
 WORK_DIR="${WORK_DIR:-${RUN_DIR}/dynamic}"
 FINAL_DIR="${FINAL_DIR:-${RUN_DIR}/merged}"
 BASE_PORT="${BASE_PORT:-8000}"
-WORKERS="${WORKERS:-16}"
+GPU_GROUPS="${GPU_GROUPS:-0,1,2,3 4,5,6,7}"
+read -r -a endpoint_groups <<< "$GPU_GROUPS"
+NUM_ENDPOINTS="${NUM_ENDPOINTS:-${#endpoint_groups[@]}}"
+WORKERS="${WORKERS:-24}"
 TIMEOUT="${TIMEOUT:-90}"
 MAX_RETRIES="${MAX_RETRIES:-2}"
 MAX_OUTPUT_TOKENS="${MAX_OUTPUT_TOKENS:-1024}"
@@ -32,17 +35,22 @@ print(sum(min(int(sys.argv[2]), count) for count in counts.values()))
 PY
 )}"
 
-check_api_server() {
-  if ! python - "$BASE_PORT" <<'PY' >/dev/null 2>&1
+check_api_servers() {
+  local endpoint
+  local port
+  for endpoint in $(seq 0 $((NUM_ENDPOINTS - 1))); do
+    port=$((BASE_PORT + endpoint))
+    if ! python - "$port" <<'PY' >/dev/null 2>&1
 import sys
 import urllib.request
 
 urllib.request.urlopen(f"http://127.0.0.1:{sys.argv[1]}/v1/models", timeout=5).read()
 PY
-  then
-    echo "vLLM endpoint on port ${BASE_PORT} is not ready. Start/fix the service before running." >&2
-    exit 1
-  fi
+    then
+      echo "vLLM endpoint on port ${port} is not ready. Start/fix every service before running." >&2
+      exit 1
+    fi
+  done
 }
 
 count_row_status() {
@@ -79,12 +87,18 @@ progress_loop() {
     if [[ "$TOTAL_ROWS" -gt 0 ]]; then
       percent=$((success_rows * 100 / TOTAL_ROWS))
     fi
-    echo "$(date '+%Y-%m-%d %H:%M:%S') progress: success ${success_rows}/${TOTAL_ROWS} (${percent}%), attempted: ${attempted_rows}, errors: ${error_rows}, worker pool: ${WORKERS}"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') progress: success ${success_rows}/${TOTAL_ROWS} (${percent}%), attempted: ${attempted_rows}, errors: ${error_rows}, worker pool: ${WORKERS} across ${NUM_ENDPOINTS} endpoints"
     sleep "$PROGRESS_INTERVAL"
   done
 }
 
-check_api_server
+check_api_servers
+
+endpoint_urls=()
+for endpoint in $(seq 0 $((NUM_ENDPOINTS - 1))); do
+  endpoint_urls+=("http://127.0.0.1:$((BASE_PORT + endpoint))/v1")
+done
+endpoint_args=(--base_urls "${endpoint_urls[@]}")
 
 resume_sources=()
 for shard_dir in "${RUN_DIR}"/shard_*; do
@@ -95,9 +109,8 @@ if [[ "${#resume_sources[@]}" -gt 0 ]]; then
   resume_args=(--resume_from "${resume_sources[@]}")
 fi
 
-echo "Starting dynamic sample runner with ${WORKERS} concurrent requests on port ${BASE_PORT}; log: ${LOG_FILE}"
+echo "Starting dynamic sample runner with ${WORKERS} concurrent requests across ${endpoint_urls[*]}; log: ${LOG_FILE}"
 python -u llm_post_filter.py \
-  --base_url "http://127.0.0.1:${BASE_PORT}/v1" \
   --model "$MODEL" \
   --input "$INPUT" \
   --output_dir "$WORK_DIR" \
@@ -109,6 +122,7 @@ python -u llm_post_filter.py \
   --max_post_chars "$MAX_POST_CHARS" \
   --resume \
   "${resume_args[@]}" \
+  "${endpoint_args[@]}" \
   > "$LOG_FILE" 2>&1 &
 RUNNER_PID="$!"
 
