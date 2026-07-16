@@ -1,0 +1,6 @@
+﻿platform,retained_pairs,retained_unique_posts,all_clean_comments,distinct_comment_roots,matched_retained_posts,unmatched_retained_posts,post_coverage_percent,linked_comments,linked_share_percent,comments_p50,comments_p90,comments_max,relation_methods
+Facebook,126,126,0,0,0,126,0.0,0,0.0,0,0,0,
+Instagram,727,727,4728,855,226,501,31.08665749656121,1215,25.69796954314721,2,11,75,"r_url:1,215"
+Reddit,36,36,0,0,0,36,0.0,0,0.0,0,0,0,
+X,4400,4367,0,0,0,4367,0.0,0,0.0,0,0,0,
+YouTube,6292,6286,213444,17227,3502,2784,55.711104040725424,44978,21.072506137441202,20,20,39,"r_native:44,978"
