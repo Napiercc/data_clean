@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FacebookThreadAnnotationV2",
+  "type": "object",
+  "properties": {
+    "topic_relevance": {
+      "type": "string",
+      "enum": ["strongly_relevant", "relevant", "off_topic"]
+    },
+    "stance_expression": {
+      "type": "string",
+      "enum": ["explicit_stance", "implicit_stance", "no_stance"]
+    },
+    "stance_direction": {
+      "type": "string",
+      "enum": [
+        "supports_post_claim",
+        "opposes_post_claim",
+        "questions_or_conditionally_opposes",
+        "participant_disagreement",
+        "mixed_or_unclear",
+        "no_stance"
+      ]
+    },
+    "stance_change": {
+      "type": "string",
+      "enum": [
+        "clear_shift_or_reversal",
+        "partial_concession_or_weakening",
+        "no_evidence_of_change",
+        "insufficient_evidence"
+      ]
+    },
+    "is_usable": {
+      "type": "string",
+      "enum": ["yes", "no"]
+    },
+    "training_grade": {
+      "type": "string",
+      "enum": [
+        "core_usable",
+        "generally_usable",
+        "borderline_sample",
+        "relevant_without_stance",
+        "unusable"
+      ]
+    },
+    "annotation_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "matched_topic_terms": {
+      "type": "string",
+      "maxLength": 512
+    },
+    "annotation_status": {
+      "type": "string",
+      "const": "completed_relaxed_ai_annotation"
+    }
+  },
+  "required": [
+    "topic_relevance",
+    "stance_expression",
+    "stance_direction",
+    "stance_change",
+    "is_usable",
+    "training_grade",
+    "annotation_reason",
+    "confidence",
+    "matched_topic_terms",
+    "annotation_status"
+  ],
+  "additionalProperties": false
+}
