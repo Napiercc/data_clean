@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "validated_at": "2026-07-21T01:49:18+00:00",
+  "source_workbook_sha256": "a3053901438bc10b8570146117fd91b72d8fee075951126702cccea557e04222",
+  "source_prompt_sha256": "66917aa4d739121505dba9ae832517298e221854b141d60c515e595ebfbf5ab0",
+  "effective_prompt_sha256": "40af11fceb66e6fd420606edc8b987313267a3b85ccc3343ecd422405f50eb09",
+  "schema_sha256": "29a38d4935244d0ccbc8d112f4edd4e7fecf0094adb0ead9493e568701b7da1c",
+  "A_to_P_hash": "c9fa78cf52cce23cb742e0bbac6ae4e954a84c508ca635d4d9f56aa85796cbe2",
+  "input": {
+    "sheet": "comprehensive_cleaned_threads",
+    "data_rows": 3505,
+    "input_columns": "A:P",
+    "unique_business_keys": 3505,
+    "topic_count": 23,
+    "topic_distribution": {
+      "Should AI-generated voice content used in scams be subject to mandatory disclosure or restrictions?": 1,
+      "Should IVF and other assisted-reproduction treatments receive greater public support?": 15,
+      "Should college students have easier access to SNAP food assistance?": 11,
+      "Should concert and sporting-event tickets be required to display the full price?": 591,
+      "Should contraceptive services be exempt from out-of-pocket costs?": 42,
+      "Should credit-card late fees be capped?": 9,
+      "Should data brokers be prohibited from selling sensitive personal data?": 324,
+      "Should free school meals be expanded?": 9,
+      "Should health-insurance premium subsidies be extended or expanded?": 108,
+      "Should medical debt be excluded from personal credit records?": 333,
+      "Should net-neutrality rules be restored or strengthened?": 92,
+      "Should paid family and parental leave be provided?": 38,
+      "Should platforms be required to remove nonconsensual AI-generated intimate deepfakes?": 3,
+      "Should police accountability be strengthened and qualified immunity be limited?": 28,
+      "Should the United States adopt stricter regulation and criminal enforcement against fentanyl?": 1233,
+      "Should the United States expand the supply of affordable housing?": 58,
+      "Should the United States impose or avoid a carbon tax?": 380,
+      "Should the federal minimum wage be raised?": 52,
+      "Should the government expand access to opioid-overdose reversal drugs such as naloxone?": 30,
+      "Should the government protect access to abortion services?": 44,
+      "Should the government subsidize household water-filtration equipment to address PFAS and other contaminants?": 9,
+      "Should tip income be exempt from taxation?": 68,
+      "Should transgender athletes be allowed to compete in women's sports?": 27
+    },
+    "formula_cells_in_A_to_P": 0,
+    "threads_containing_nontext_marker": 56,
+    "conversation_chars": {
+      "max": 31686,
+      "p95": 742,
+      "p99": 3160
+    },
+    "post_chars": {
+      "max": 4228
+    },
+    "combined_topic_post_conversation_chars": {
+      "max": 32445,
+      "p95": 1351,
+      "p99": 3679
+    }
+  },
+  "selection": {
+    "selected_count": 3505,
+    "sample_size_argument": 0,
+    "covered_topics": 23
+  },
+  "guardrails_appended_at_runtime": true,
+  "model_protocol_version": "facebook-thread-model-protocol-v3-all-english",
+  "model_instruction_language": "English",
+  "output_contract_language": "English field names, labels, and annotation reason",
+  "silent_truncation": false
+}
