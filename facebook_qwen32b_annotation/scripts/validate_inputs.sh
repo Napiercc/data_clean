@@ -8,11 +8,11 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
 INPUT_XLSX="${PACKAGE_ROOT}/input/facebook_comments_comprehensive_final.xlsx"
 PROMPT_FILE="${PACKAGE_ROOT}/input/ai_annotation_prompt.md"
 SCHEMA_FILE="${PACKAGE_ROOT}/config/annotation_schema.json"
-OUTPUT_DIR="${PACKAGE_ROOT}/output/input_validation"
+OUTPUT_DIR="${PACKAGE_ROOT}/output/input_validation_v4_three_fields"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
 EXPECTED_XLSX_SHA256="a3053901438bc10b8570146117fd91b72d8fee075951126702cccea557e04222"
-EXPECTED_PROMPT_SHA256="66917aa4d739121505dba9ae832517298e221854b141d60c515e595ebfbf5ab0"
+EXPECTED_PROMPT_SHA256="5385903490949a686d6eb4061e7193cb2835a1655b864db7c4947eea7bbdfbe9"
 
 mkdir -p "${LOG_DIR}" "${OUTPUT_DIR}/final"
 

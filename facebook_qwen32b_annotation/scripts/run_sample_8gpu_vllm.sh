@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 
-RUN_DIR="${PACKAGE_ROOT}/output/qwen32b_8gpu_sample"
+RUN_DIR="${PACKAGE_ROOT}/output/qwen32b_8gpu_sample_v4_three_fields"
 LOG_DIR="${RUN_DIR}/logs"
 FINAL_DIR="${RUN_DIR}/final"
 mkdir -p "${LOG_DIR}" "${FINAL_DIR}"

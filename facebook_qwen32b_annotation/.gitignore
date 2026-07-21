@@ -5,6 +5,21 @@ __pycache__/
 logs/
 run/
 
+# Generated run policy:
+# - keep output/*/results/, output/*/final/, run README/status files, and reports
+#   visible to Git for review and downstream reuse;
+# - ignore resumable runtime state, logs, and reproducible audit intermediates.
+output/**/logs/
+output/**/run/
+output/**/state/
+output/**/audit/
+output/**/*.sqlite
+output/**/*.sqlite-shm
+output/**/*.sqlite-wal
+
+# Local validation-only runs make no model calls and can be regenerated.
+output/input_validation*/
+output/legacy_repair_validation*/
 
 !output/.gitkeep
 

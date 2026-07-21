@@ -18,7 +18,7 @@ scripts/validate_inputs.sh
 
 Input validation must confirm 3,505 workbook rows and the frozen hashes recorded in `input/input_manifest.json` and `input/SHA256SUMS.txt`. Stop if validation fails. Do not substitute the current raw scraper export for the bundled snapshot.
 
-This is the all-English v2 annotation contract with the `english-v2-compact-r2-root-chain-unit` prompt. One input row is one root comment plus its replies; separate root comments under the same post remain separate rows. Input headers, JSON Schema keys, categorical labels, structural markers, `annotation_reason`, and the status constant are English. Do not resume or merge result state produced by the earlier Chinese-label contract or an earlier prompt revision.
+This is the all-English v4 three-field annotation contract. One input row is one root comment plus its replies; separate root comments under the same post remain separate rows. The model returns only `topic_relevance`, `training_grade`, and `annotation_reason`. Do not resume or merge an earlier task database into the v4 run directory.
 
 ## 2. Start two TP4 services
 
@@ -73,15 +73,18 @@ Defaults: 16 workers, a 180-second timeout, five network retries, two semantic r
 Review these sample artifacts:
 
 ```text
-output/qwen32b_8gpu_sample/
+output/qwen32b_8gpu_sample_v4_three_fields/
+|-- README.md
+|-- results/facebook_comments_annotation_review.xlsx
 |-- final/facebook_comments_sample_annotated.xlsx
-|-- run_summary.json
-|-- run_manifest.json
-|-- annotations.csv
-`-- errors.csv
+|-- results/run_summary.json
+|-- results/annotations.csv
+|-- results/errors.csv
+|-- state/tasks.sqlite
+`-- audit/run_manifest.json
 ```
 
-If a newer client version adjusts the directory layout, treat that run's `run_manifest.json` as authoritative.
+Start with the run's `README.md`. Treat `audit/run_manifest.json` as authoritative for exact inputs and settings.
 
 ## 4. Run or resume the full dataset
 
@@ -89,14 +92,14 @@ If a newer client version adjusts the directory layout, treat that run's `run_ma
 scripts/run_full_8gpu_vllm.sh
 ```
 
-The script includes `--resume`. After an interruption, confirm that both API endpoints are healthy and run the same command again. Successful v2 tasks are reused and failed v2 tasks are retried.
+The script includes `--resume`. After an interruption, confirm that both API endpoints are healthy and run the same command again. Successful v4 tasks are reused and failed v4 tasks are retried.
 
-Do not place an old-contract `tasks.sqlite`, JSONL file, CSV, or workbook in the v2 output directory. v1 and v2 task state are intentionally incompatible.
+Do not place an old-contract `tasks.sqlite`, JSONL file, CSV, or workbook in the v4 output directory. The current resume database is `state/tasks.sqlite`; earlier and v4 task state are intentionally incompatible.
 
 Inspect progress and errors:
 
 ```bash
-tail -f output/qwen32b_8gpu/logs/annotate.log
+tail -f output/qwen32b_8gpu_v4_three_fields/logs/annotate.log
 ```
 
 The terminal and log show the same progress fields. For example:
@@ -111,9 +114,30 @@ PROGRESS overall=1250/3505 percent=35.7% current=250/2505 new_successes=248 new_
 - `eta` uses that average rate and may fluctuate early; it is `unknown` before the first usable rate.
 - The sample script reports every 10 rows. The full script reports every 50 rows unless `PROGRESS_EVERY` is set.
 
-If the full-run script exits nonzero because of `--fail-on-errors`, inspect `errors.csv` and `attempts.jsonl`. Do not treat a workbook with blank Q:Z cells as a completed full result.
+If the full-run script exits nonzero because of `--fail-on-errors`, inspect `results/errors.csv` and `audit/attempts.jsonl`. The review workbook is still written with A:P and any successful Q:S annotations together; failed rows remain blank. Only the workbook under `final/` represents a completed full result.
 
-## 5. Stop the services
+## 5. Repair the preserved v2 failures
+
+Use this instead of rerunning all 3,505 rows when the organized legacy files remain at `output/qwen32b_8gpu/results/`:
+
+```bash
+scripts/retry_legacy_errors_8gpu_vllm.sh
+```
+
+The launcher:
+
+- reads 202 retry row numbers from `output/qwen32b_8gpu/results/errors.csv`;
+- projects `output/qwen32b_8gpu/results/annotations.csv` to the current three fields;
+- rejects 20 prior successes whose relevant label conflicts with `training_grade=unusable` instead of automatically relabeling their content;
+- reuses 3,283 compatible baseline rows and sends 222 rows to Qwen3-32B;
+- writes isolated state under `output/qwen32b_8gpu_v4_legacy_error_repair/`;
+- merges baseline and repaired rows into one review workbook and one combined `annotations.csv`;
+- automatically creates `facebook_selected_commenters_for_crawl.csv` in the repair run's `results/` directory;
+- retries only unresolved repair rows when the same command is run again.
+
+The repair launcher uses four semantic retries by default because the input set consists entirely of prior failures. Override with `SEMANTIC_RETRIES` if needed.
+
+## 6. Stop the services
 
 ```bash
 scripts/stop_vllm_8gpu.sh
@@ -160,8 +184,8 @@ python annotate_facebook_threads.py \
   --input-xlsx input/facebook_comments_comprehensive_final.xlsx \
   --prompt-file input/ai_annotation_prompt.md \
   --schema-file config/annotation_schema.json \
-  --output-dir output/dry_run_v2 \
-  --output-xlsx output/dry_run_v2/final/dry_run.xlsx \
+  --output-dir output/dry_run_v4_three_fields \
+  --output-xlsx output/dry_run_v4_three_fields/final/dry_run.xlsx \
   --model Qwen3-32B \
   --base-urls http://127.0.0.1:8000/v1,http://127.0.0.1:8001/v1 \
   --workers 16 \

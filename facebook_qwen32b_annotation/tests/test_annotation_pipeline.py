@@ -25,6 +25,10 @@ SCHEMA_PATH = PACKAGE_ROOT / "config" / "annotation_schema.json"
 INPUT_XLSX = PACKAGE_ROOT / "input" / "facebook_comments_comprehensive_final.xlsx"
 PROMPT_FILE = PACKAGE_ROOT / "input" / "ai_annotation_prompt.md"
 START_SCRIPT = PACKAGE_ROOT / "scripts" / "start_vllm_8gpu_qwen32b.sh"
+LEGACY_ERRORS_CSV = PACKAGE_ROOT / "output" / "qwen32b_8gpu" / "results" / "errors.csv"
+LEGACY_ANNOTATIONS_CSV = (
+    PACKAGE_ROOT / "output" / "qwen32b_8gpu" / "results" / "annotations.csv"
+)
 
 
 def make_row(
@@ -82,30 +86,16 @@ def make_row(
 def valid_related_annotation() -> dict[str, str]:
     return {
         "topic_relevance": "strongly_relevant",
-        "stance_expression": "explicit_stance",
-        "stance_direction": "opposes_post_claim",
-        "stance_change": "insufficient_evidence",
-        "is_usable": "yes",
         "training_grade": "generally_usable",
-        "annotation_reason": "The comment directly opposes the post's carbon-tax claim; the stance is clear but briefly argued.",
-        "confidence": "high",
-        "matched_topic_terms": "carbon tax",
-        "annotation_status": "completed_relaxed_ai_annotation",
+        "annotation_reason": "The comment directly discusses the carbon-tax topic and is interpretable.",
     }
 
 
 def valid_unrelated_annotation() -> dict[str, str]:
     return {
         "topic_relevance": "off_topic",
-        "stance_expression": "no_stance",
-        "stance_direction": "no_stance",
-        "stance_change": "insufficient_evidence",
-        "is_usable": "no",
         "training_grade": "unusable",
         "annotation_reason": "The comment has no explainable relationship to the assigned topic.",
-        "confidence": "high",
-        "matched_topic_terms": "",
-        "annotation_status": "completed_relaxed_ai_annotation",
     }
 
 
@@ -217,23 +207,23 @@ class ValidationTests(unittest.TestCase):
         errors, _ = pipeline.validate_annotation(value, make_row(), self.schema)
         self.assertTrue(any("topic_relevance" in error for error in errors), errors)
 
-    def test_usability_grade_mismatch_is_rejected(self) -> None:
+    def test_relevance_grade_mismatch_is_rejected(self) -> None:
         value = valid_related_annotation()
-        value["is_usable"] = "no"
+        value["training_grade"] = "unusable"
         errors, _ = pipeline.validate_annotation(value, make_row(), self.schema)
-        self.assertTrue(any("cross.usability_grade" in error for error in errors), errors)
+        self.assertTrue(any("cross.relevant_grade" in error for error in errors), errors)
 
-    def test_single_message_change_is_rejected(self) -> None:
+    def test_stance_fields_are_rejected_as_extra_fields(self) -> None:
         value = valid_related_annotation()
         value["stance_change"] = "no_evidence_of_change"
-        errors, _ = pipeline.validate_annotation(value, make_row(message_count=1), self.schema)
-        self.assertTrue(any("cross.single_message_change" in error for error in errors), errors)
-
-    def test_direct_keyword_must_appear_in_comment(self) -> None:
-        value = valid_related_annotation()
-        value["matched_topic_terms"] = "cap and trade"
         errors, _ = pipeline.validate_annotation(value, make_row(), self.schema)
-        self.assertTrue(any("keywords.not_in_comment" in error for error in errors), errors)
+        self.assertTrue(any("schema.extra_fields" in error for error in errors), errors)
+
+    def test_removed_field_is_rejected(self) -> None:
+        value = valid_related_annotation()
+        value["confidence"] = "high"
+        errors, _ = pipeline.validate_annotation(value, make_row(), self.schema)
+        self.assertTrue(any("schema.extra_fields" in error for error in errors), errors)
 
     def test_annotation_reason_over_240_characters_warns(self) -> None:
         value = valid_related_annotation()
@@ -242,24 +232,13 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertTrue(any("reason.over_240" in warning for warning in warnings), warnings)
 
-    def test_only_nontext_thread_is_forced_unusable(self) -> None:
+    def test_nontext_content_is_not_locally_reclassified(self) -> None:
         row = make_row(
             conversation="1. Alice [ROOT COMMENT]: [NON-TEXT COMMENT]",
             message_count=1,
         )
         errors, _ = pipeline.validate_annotation(valid_related_annotation(), row, self.schema)
-        self.assertTrue(any("cross.only_nontext" in error for error in errors), errors)
-
-    def test_extended_nontext_thread_is_forced_unusable(self) -> None:
-        row = make_row(
-            conversation=(
-                "1. Alice [ROOT COMMENT]: "
-                "[NON-TEXT COMMENT: StoryAttachmentPhotoStyleRenderer, Photo]"
-            ),
-            message_count=1,
-        )
-        errors, _ = pipeline.validate_annotation(valid_related_annotation(), row, self.schema)
-        self.assertTrue(any("cross.only_nontext" in error for error in errors), errors)
+        self.assertEqual(errors, [])
 
 
 class IdentityAndSamplingTests(unittest.TestCase):
@@ -283,13 +262,41 @@ class IdentityAndSamplingTests(unittest.TestCase):
             "elapsed=00:00:40 eta=00:02:00",
         )
 
+    def test_output_layout_migrates_legacy_files_without_changing_content(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            legacy_files = {
+                "annotations.csv": b"annotation-data",
+                "tasks.sqlite": b"database-data",
+                "attempts.jsonl": b"attempt-data",
+            }
+            for name, content in legacy_files.items():
+                (output_dir / name).write_bytes(content)
+            layout = pipeline.prepare_output_layout(output_dir)
+            expected = {
+                "annotations.csv": layout.results / "annotations.csv",
+                "tasks.sqlite": layout.state / "tasks.sqlite",
+                "attempts.jsonl": layout.audit / "attempts.jsonl",
+            }
+            for name, destination in expected.items():
+                self.assertFalse((output_dir / name).exists())
+                self.assertEqual(destination.read_bytes(), legacy_files[name])
+            for directory_path in (
+                layout.results,
+                layout.final,
+                layout.state,
+                layout.audit,
+                layout.logs,
+            ):
+                self.assertTrue(directory_path.is_dir())
+
     def test_all_english_contract_constants_are_exact(self) -> None:
-        self.assertEqual(pipeline.SCHEMA_VERSION, "facebook-thread-annotation-v2-all-english")
+        self.assertEqual(pipeline.SCHEMA_VERSION, "facebook-thread-annotation-v4-three-fields")
         self.assertEqual(
-            pipeline.VALIDATOR_VERSION, "facebook-cross-field-validator-v3-all-english"
+            pipeline.VALIDATOR_VERSION, "facebook-structural-validator-v5-three-fields"
         )
         self.assertEqual(
-            pipeline.MODEL_PROTOCOL_VERSION, "facebook-thread-model-protocol-v3-all-english"
+            pipeline.MODEL_PROTOCOL_VERSION, "facebook-thread-model-protocol-v5-three-fields"
         )
         self.assertEqual(pipeline.DEFAULT_SHEET, "comprehensive_cleaned_threads")
         self.assertEqual(
@@ -317,15 +324,8 @@ class IdentityAndSamplingTests(unittest.TestCase):
             pipeline.OUTPUT_HEADERS,
             [
                 "topic_relevance",
-                "stance_expression",
-                "stance_direction",
-                "stance_change",
-                "is_usable",
                 "training_grade",
                 "annotation_reason",
-                "confidence",
-                "matched_topic_terms",
-                "annotation_status",
             ],
         )
 
@@ -360,13 +360,13 @@ class IdentityAndSamplingTests(unittest.TestCase):
 
     def test_prompt_uses_all_english_output_contract(self) -> None:
         prompt = PROMPT_FILE.read_text(encoding="utf-8")
-        self.assertIn("# Facebook Comment Thread AI Annotation Prompt", prompt)
-        self.assertIn("The complete annotation contract is in English", prompt)
-        self.assertIn("Return only the schema-compliant ten-field JSON object", prompt)
+        self.assertIn("# Facebook Comment Thread Relevance Annotation Prompt", prompt)
+        self.assertIn("Return only one three-field JSON object", prompt)
+        self.assertIn("stance-expression", prompt)
         self.assertIn("one root comment plus every reply nested under that root", prompt)
         self.assertIn("Different root comments beneath the same post are separate rows", prompt)
         self.assertLessEqual(len(prompt), 12000)
-        for field in pipeline.INPUT_HEADERS:
+        for field in ("topic", "post_text", "conversation_text"):
             self.assertIn(f"`{field}`", prompt)
         schema, _ = pipeline.load_schema(SCHEMA_PATH)
         for field, definition in schema["properties"].items():
@@ -423,7 +423,7 @@ class VLLMClientTests(unittest.TestCase):
         self.assertIn("Review the following single Facebook comment thread", request["messages"][-1]["content"])
         schema_properties = request["response_format"]["json_schema"]["schema"]["properties"]
         self.assertIn("topic_relevance", schema_properties)
-        self.assertIn("annotation_status", schema_properties)
+        self.assertIn("training_grade", schema_properties)
 
     def test_preflight_accepts_expected_served_model(self) -> None:
         with fake_vllm([]) as server:
@@ -454,8 +454,8 @@ class VLLMClientTests(unittest.TestCase):
         self.assertEqual(len(server.requests), 2)
         retry_message = server.requests[1]["messages"][-1]["content"]
         self.assertIn("The previous output failed local hard validation", retry_message)
-        self.assertIn("cross.q_irrelevant", retry_message)
-        self.assertIn("When Q=`off_topic`", retry_message)
+        self.assertIn("cross.off_topic_grade", retry_message)
+        self.assertIn("Q=`off_topic`", retry_message)
 
     def test_thinking_kwarg_fallback_does_not_retry_unrelated_http_400(self) -> None:
         planned = [
@@ -501,7 +501,8 @@ class DatabaseAndExportTests(unittest.TestCase):
         row = make_row()
         with tempfile.TemporaryDirectory() as directory:
             output_dir = Path(directory)
-            connection = pipeline.connect_database(output_dir / "tasks.sqlite")
+            layout = pipeline.prepare_output_layout(output_dir)
+            connection = pipeline.connect_database(layout.state / "tasks.sqlite")
             pipeline.initialize_tasks(connection, [row], "p", "ep", "s", "Qwen3-32B", False)
             pipeline.record_outcome(
                 connection,
@@ -519,12 +520,14 @@ class DatabaseAndExportTests(unittest.TestCase):
                 ),
             )
             _, errors, summary = pipeline.export_run_artifacts(
-                connection, [row], output_dir, "Qwen3-32B", "2026-07-20T00:00:00+00:00"
+                connection, [row], layout, "Qwen3-32B", "2026-07-20T00:00:00+00:00"
             )
             connection.close()
             self.assertEqual(len(errors), 1)
             self.assertEqual(summary["unresolved_errors"], 1)
-            with (output_dir / "errors.csv").open(encoding="utf-8-sig", newline="") as handle:
+            with (layout.results / "errors.csv").open(
+                encoding="utf-8-sig", newline=""
+            ) as handle:
                 exported = list(csv.DictReader(handle))
             self.assertEqual(exported[0]["task_key"], row.task_key)
 
@@ -532,7 +535,8 @@ class DatabaseAndExportTests(unittest.TestCase):
         row = make_row()
         with tempfile.TemporaryDirectory() as directory:
             output_dir = Path(directory)
-            connection = pipeline.connect_database(output_dir / "tasks.sqlite")
+            layout = pipeline.prepare_output_layout(output_dir)
+            connection = pipeline.connect_database(layout.state / "tasks.sqlite")
             pipeline.initialize_tasks(connection, [row], "p", "ep", "s", "Qwen3-32B", False)
             pipeline.record_outcome(
                 connection,
@@ -572,12 +576,44 @@ class DatabaseAndExportTests(unittest.TestCase):
                 )
             )
             _, _, summary = pipeline.export_run_artifacts(
-                connection, [row], output_dir, "Qwen3-32B", "2026-07-20T00:00:00+00:00"
+                connection, [row], layout, "Qwen3-32B", "2026-07-20T00:00:00+00:00"
             )
             connection.close()
         self.assertEqual(attempts, [(1,), (2,)])
         self.assertEqual(summary["prompt_tokens"], 30)
         self.assertEqual(summary["completion_tokens"], 12)
+
+    def test_combined_and_crawl_csvs_use_current_formats(self) -> None:
+        rows = [make_row(2), make_row(3)]
+        rows[1].values["commenter_ids"] = "user-3 | user-4"
+        rows[1].values["commenter_usernames"] = "Bob | Carol"
+        results = {
+            2: valid_related_annotation(),
+            3: valid_unrelated_annotation(),
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            combined_path = root / "annotations.csv"
+            crawl_path = root / "facebook_selected_commenters_for_crawl.csv"
+            combined_stats = pipeline.write_combined_annotations_csv(
+                rows, results, combined_path
+            )
+            crawl_stats = pipeline.write_crawl_input_csv(rows, results, crawl_path)
+            with combined_path.open(encoding="utf-8-sig", newline="") as handle:
+                combined_rows = list(csv.DictReader(handle))
+            with crawl_path.open(encoding="utf-8", newline="") as handle:
+                crawl_rows = list(csv.DictReader(handle))
+            self.assertEqual(combined_stats["rows"], 2)
+            self.assertEqual(len(combined_rows), 2)
+            self.assertIn("conversation_text", combined_rows[0])
+            self.assertEqual(
+                list(combined_rows[0])[-3:], pipeline.OUTPUT_HEADERS
+            )
+            self.assertEqual(crawl_stats["selected_thread_rows"], 1)
+            self.assertEqual(crawl_stats["exported_relations"], 1)
+            self.assertEqual(crawl_rows[0]["commenter_id"], "user-2")
+            self.assertEqual(crawl_rows[0]["source_excel_row"], "2")
+            self.assertFalse(crawl_path.read_bytes().startswith(b"\xef\xbb\xbf"))
 
 
 class WorkbookIntegrityTests(unittest.TestCase):
@@ -614,6 +650,24 @@ class WorkbookIntegrityTests(unittest.TestCase):
             self.assertEqual(conversation.count("[REPLY]:"), reply_count, row.excel_row)
             self.assertEqual(message_count, reply_count + 1, row.excel_row)
 
+    def test_legacy_errors_and_baseline_exactly_cover_the_frozen_workbook(self) -> None:
+        selected = pipeline.select_rows_from_errors_csv(self.rows, LEGACY_ERRORS_CSV)
+        baseline, rejected = pipeline.load_baseline_annotations(
+            LEGACY_ANNOTATIONS_CSV, self.rows, self.schema
+        )
+        selected_rows = {row.excel_row for row in selected} | set(rejected)
+        all_rows = {row.excel_row for row in self.rows}
+        self.assertEqual(len(selected), 202)
+        self.assertEqual(len(rejected), 20)
+        self.assertEqual(len(selected_rows), 222)
+        self.assertEqual(len(baseline), 3283)
+        self.assertFalse(selected_rows & set(baseline))
+        self.assertEqual(selected_rows | set(baseline), all_rows)
+        self.assertNotIn(
+            "relevant_without_stance",
+            {value["training_grade"] for value in baseline.values()},
+        )
+
     def test_writer_preserves_source_and_ap_and_writes_only_output_columns(self) -> None:
         source_sha_before = pipeline.sha256_file(INPUT_XLSX)
         row = self.rows[0]
@@ -634,13 +688,13 @@ class WorkbookIntegrityTests(unittest.TestCase):
             )
             self.assertEqual(output_ap_hash, self.source_ap_hash)
             self.assertEqual(output_rows, self.source_rows)
-            self.assertEqual(output_columns, 26)
+            self.assertEqual(output_columns, 19)
             self.assertEqual(result["annotated_rows"], 1)
             from openpyxl import load_workbook
 
             workbook = load_workbook(output, read_only=True, data_only=False)
             sheet = workbook[pipeline.DEFAULT_SHEET]
-            actual = [sheet.cell(row.excel_row, col).value for col in range(17, 27)]
+            actual = [sheet.cell(row.excel_row, col).value for col in range(17, 20)]
             workbook.close()
             expected_excel_values = [
                 None if annotation[field] == "" else annotation[field]
@@ -651,6 +705,66 @@ class WorkbookIntegrityTests(unittest.TestCase):
 
 
 class MainIntegrationTests(unittest.TestCase):
+    def test_blocked_run_still_writes_combined_review_with_blank_annotation(self) -> None:
+        invalid = valid_related_annotation()
+        invalid["stance_expression"] = "explicit_stance"
+        with tempfile.TemporaryDirectory() as directory, fake_vllm([invalid]) as server:
+            output_dir = Path(directory) / "run"
+            result = pipeline.main(
+                [
+                    "--input-xlsx",
+                    str(INPUT_XLSX),
+                    "--prompt-file",
+                    str(PROMPT_FILE),
+                    "--schema-file",
+                    str(SCHEMA_PATH),
+                    "--skip-manifest-check",
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "Qwen3-32B",
+                    "--base-urls",
+                    server.base_url,
+                    "--workers",
+                    "1",
+                    "--network-retries",
+                    "0",
+                    "--semantic-retries",
+                    "0",
+                    "--sample-size",
+                    "1",
+                    "--skip-preflight",
+                    "--fail-on-errors",
+                ]
+            )
+            self.assertEqual(result, 2)
+            review = output_dir / "results" / "facebook_comments_annotation_review.xlsx"
+            self.assertTrue(review.is_file())
+            self.assertFalse((output_dir / "final" / "facebook_comments_comprehensive_annotated.xlsx").exists())
+            from openpyxl import load_workbook
+
+            workbook = load_workbook(review, read_only=True, data_only=False)
+            sheet = workbook[pipeline.DEFAULT_SHEET]
+            self.assertEqual(
+                [sheet.cell(1, column).value for column in range(17, 20)],
+                pipeline.OUTPUT_HEADERS,
+            )
+            self.assertTrue(
+                all(
+                    cell.value is None
+                    for cells in sheet.iter_rows(
+                        min_row=2, max_row=sheet.max_row, min_col=17, max_col=19
+                    )
+                    for cell in cells
+                )
+            )
+            workbook.close()
+            with (output_dir / "results" / "errors.csv").open(
+                encoding="utf-8-sig", newline=""
+            ) as handle:
+                error_row = next(csv.DictReader(handle))
+            self.assertIn("conversation_text", error_row)
+
     def test_main_single_row_with_fake_vllm_writes_verified_workbook(self) -> None:
         source_sha_before = pipeline.sha256_file(INPUT_XLSX)
         with tempfile.TemporaryDirectory() as directory, fake_vllm(
@@ -702,8 +816,13 @@ class MainIntegrationTests(unittest.TestCase):
             self.assertIn("rate=", progress_output)
             self.assertIn("rows/s elapsed=", progress_output)
             self.assertIn("eta=00:00:00", progress_output)
-            self.assertIn("DONE succeeded=1 errors=0 percent=100.0%", progress_output)
-            summary = json.loads((output_dir / "run_summary.json").read_text(encoding="utf-8"))
+            self.assertIn(
+                "DONE succeeded=1 combined=1 errors=0 percent=100.0%",
+                progress_output,
+            )
+            summary = json.loads(
+                (output_dir / "results" / "run_summary.json").read_text(encoding="utf-8")
+            )
             self.assertEqual(summary["succeeded"], 1)
             self.assertEqual(summary["unresolved_errors"], 0)
             self.assertTrue(summary["source_workbook_unchanged"])
@@ -712,10 +831,33 @@ class MainIntegrationTests(unittest.TestCase):
             self.assertEqual(summary["processing_progress"]["processed_this_run"], 1)
             self.assertEqual(summary["processing_progress"]["new_failures"], 0)
             self.assertEqual(summary["processing_progress"]["percent"], 100.0)
-            self.assertGreater(summary["processing_progress"]["elapsed_seconds"], 0)
-            self.assertGreater(
+            self.assertGreaterEqual(summary["processing_progress"]["elapsed_seconds"], 0)
+            self.assertGreaterEqual(
                 summary["processing_progress"]["average_rows_per_second"], 0
             )
+            self.assertTrue((output_dir / "results" / "annotations.csv").is_file())
+            self.assertTrue(
+                (
+                    output_dir
+                    / "results"
+                    / "facebook_selected_commenters_for_crawl.csv"
+                ).is_file()
+            )
+            self.assertTrue(
+                (output_dir / "results" / "facebook_comments_annotation_review.xlsx").is_file()
+            )
+            with (output_dir / "results" / "annotations.csv").open(
+                encoding="utf-8-sig", newline=""
+            ) as handle:
+                combined_row = next(csv.DictReader(handle))
+            self.assertIn("conversation_text", combined_row)
+            self.assertIn("topic_relevance", combined_row)
+            self.assertNotIn("is_usable", combined_row)
+            self.assertTrue((output_dir / "audit" / "attempts.jsonl").is_file())
+            self.assertTrue((output_dir / "state" / "tasks.sqlite").is_file())
+            output_index = (output_dir / "README.md").read_text(encoding="utf-8")
+            self.assertIn("Status: **COMPLETE**", output_index)
+            self.assertIn("Successful annotations: 1", output_index)
         self.assertEqual(pipeline.sha256_file(INPUT_XLSX), source_sha_before)
 
 

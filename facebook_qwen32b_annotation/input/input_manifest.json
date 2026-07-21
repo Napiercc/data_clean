@@ -1,7 +1,7 @@
 {
-  "manifest_version": 2,
-  "snapshot_name": "facebook_comments_comprehensive_final_english_v2_2026-07-20",
-  "prompt_revision": "english-v2-compact-r2-root-chain-unit",
+  "manifest_version": 4,
+  "snapshot_name": "facebook_comments_comprehensive_final_english_v4_three_fields_2026-07-21",
+  "prompt_revision": "english-v4-three-fields-root-chain-unit",
   "annotation_target": "the bundled all-English workbook snapshot, not the currently available raw scraper export",
   "input_contract_language": "English",
   "output_contract_language": "English",
@@ -17,14 +17,12 @@
     },
     {
       "path": "ai_annotation_prompt.md",
-      "sha256": "66917aa4d739121505dba9ae832517298e221854b141d60c515e595ebfbf5ab0",
-      "size_bytes": 10486,
+      "sha256": "5385903490949a686d6eb4061e7193cb2835a1655b864db7c4947eea7bbdfbe9",
+      "size_bytes": 3474,
       "encoding": "UTF-8 without BOM",
       "instruction_language": "English",
-      "output_contract_language": "English field names, labels, and annotation reason",
-      "derived_from_sha256": "e1722d1f8f70999ede4301703f1428ef3eb199e86a9a44e3ec3f252b84b71946",
-      "expanded_english_source_sha256": "1bb1fdb9786e8e9d7ea73611231dc38bee2184d1148f48a8869969693391b774",
-      "original_source_sha256": "9ac5205c4cdfaa88e8e54ab949f83b7f40b9951cbe715c6a953ced369058bf53"
+      "output_contract_language": "Three English fields: relevance, training grade, and reason",
+      "derived_from_sha256": "b46d9d7ea88030becbb76f758f8d5d670ddfddf496806e12ebfd763347d3115b"
     }
   ],
   "excluded_sensitive_or_mismatched_inputs": [

@@ -5,22 +5,23 @@ This package performs recoverable and auditable structured annotation of Faceboo
 - GPUs 0-3: `http://127.0.0.1:8000/v1`
 - GPUs 4-7: `http://127.0.0.1:8001/v1`
 
-The client reads source columns A:P and writes ten AI annotation fields to Q:Z in a new workbook. It never overwrites the source workbook.
+The client reads source columns A:P and writes three AI fields to Q:S in a new workbook: `topic_relevance`, `training_grade`, and `annotation_reason`. It never overwrites the source workbook. Usability flags, confidence, matched terms, row-level status, and all stance outputs are omitted.
 
 The annotation unit is one root-comment reply chain: one root comment plus all replies beneath it. Different root comments under the same Facebook post remain separate workbook rows and are annotated independently; comments from an entire post are never concatenated into one sample.
 
 ## Contract version
 
-This package uses the all-English v2 annotation contract:
+This package uses the all-English v4 three-field annotation contract:
 
 - every input header, output field, categorical label, status value, structural marker, prompt instruction, and validation message is English;
 - field names use snake_case, consistent with the existing post-cleaning pipeline;
-- the `english-v2-compact-r2-root-chain-unit` prompt preserves the full decision contract, explicitly defines one root-comment reply chain as the annotation unit, and removes repeated prose and the label-anchoring JSON example;
+- the prompt explicitly defines one root-comment reply chain as the annotation unit and requests exactly three output fields;
+- local validation checks JSON structure, label spelling, delimiters, and mechanical field combinations only; it does not inspect comment meaning or relabel content;
 - `annotation_reason` is concise English text with a maximum length of 400 characters;
 - the exact JSON output contract is defined by `config/annotation_schema.json`;
 - raw posts, comment bodies, URLs, IDs, usernames, participant names, and row order remain unchanged.
 
-The v2 workbook, prompt, schema, validator, and model protocol produce new task identities. Results or SQLite state created under the earlier Chinese-label contract must not be resumed or merged into v2. Start v2 in a clean output directory; the bundled scripts use dedicated output locations.
+The v4 prompt, schema, validator, and model protocol produce new task identities. Do not resume v4 from an earlier SQLite database. The bundled scripts use new `*_v4_three_fields` output directories, leaving previous runs untouched.
 
 ## Frozen inputs
 
@@ -28,8 +29,8 @@ Only these two source inputs belong in this package:
 
 | File | Purpose | Source of truth |
 |---|---|---|
-| `input/facebook_comments_comprehensive_final.xlsx` | 3,505 Facebook comment threads using the v2 English input contract | `input/input_manifest.json` and `input/SHA256SUMS.txt` |
-| `input/ai_annotation_prompt.md` | All-English v2 thread-annotation instructions | `input/input_manifest.json` and `input/SHA256SUMS.txt` |
+| `input/facebook_comments_comprehensive_final.xlsx` | 3,505 Facebook comment threads; immutable source columns A:P | `input/input_manifest.json` and `input/SHA256SUMS.txt` |
+| `input/ai_annotation_prompt.md` | All-English v4 three-field annotation instructions | `input/input_manifest.json` and `input/SHA256SUMS.txt` |
 
 The workbook is a frozen snapshot and is not the same batch as the raw CSV or JSONL currently available in the scraper directory. Do not add any of the following to this package:
 
@@ -48,7 +49,7 @@ facebook_qwen32b_annotation/
 |-- input/                             # frozen inputs, manifest, and checksums
 |-- scripts/                           # start, stop, validate, sample, and full-run scripts
 |-- tests/                             # offline tests
-|-- output/                            # run artifacts, excluded from version control by default
+|-- output/                            # organized run directories, excluded from version control
 |-- logs/                              # vLLM logs, created on first startup
 `-- run/                               # vLLM PID files, created on first startup
 ```
@@ -91,8 +92,12 @@ scripts/start_vllm_8gpu_qwen32b.sh
 # 3. Run the deterministic 64-row sample first.
 scripts/run_sample_8gpu_vllm.sh
 
-# 4. Review the sample, then run the full dataset. Re-running resumes v2 state.
+# 4. Review the sample, then run the full dataset. Re-running resumes v4 state.
 scripts/run_full_8gpu_vllm.sh
+
+# Optional: repair the preserved v2 failures and any prior success that is
+# mechanically incompatible with the current three-field contract.
+scripts/retry_legacy_errors_8gpu_vllm.sh
 
 # 5. Stop the two services started by this package.
 scripts/stop_vllm_8gpu.sh
@@ -132,26 +137,57 @@ The post-cleaning service's 4,096-token context is intentionally not reused: Fac
 The default sample workbook is:
 
 ```text
-output/qwen32b_8gpu_sample/final/facebook_comments_sample_annotated.xlsx
+output/qwen32b_8gpu_sample_v4_three_fields/final/facebook_comments_sample_annotated.xlsx
 ```
 
-It retains all 3,505 source rows in A:P and fills Q:Z only for the deterministic 64 selected rows. Q:Z remains blank for other rows, so this workbook is not a completed full-data artifact.
+It retains all 3,505 source rows in A:P and fills Q:S only for the deterministic 64 selected rows. Q:S remains blank for other rows, so this workbook is not a completed full-data artifact.
 
 The default full workbook is:
 
 ```text
-output/qwen32b_8gpu/final/facebook_comments_comprehensive_annotated.xlsx
+output/qwen32b_8gpu_v4_three_fields/final/facebook_comments_comprehensive_annotated.xlsx
 ```
 
 Each run preserves checkpoint state, request-attempt records, valid results, errors, a run manifest, and a summary. A final workbook must satisfy all of the following:
 
 1. The source input hashes are unchanged before and after the run.
-2. Output A:P matches the frozen v2 input cell by cell, including cell types.
-3. Only the ten schema fields are written to Q:Z.
-4. A result enters the final workbook only after schema and cross-field validation pass.
+2. Output A:P matches the frozen input cell by cell, including cell types.
+3. Only the three schema fields are written to Q:S.
+4. A result enters the final workbook only after schema and structural validation pass.
 5. The full-run script uses `--fail-on-errors` and exits nonzero while unresolved errors remain.
 
-Resume identity includes the input row, effective prompt, schema, validator and model protocol versions, and model name. Any change creates a new task version. Do not copy a v1 `tasks.sqlite` or v1 result file into a v2 output directory.
+Resume identity includes the input row, effective prompt, schema, validator and model protocol versions, and model name. Any change creates a new task version. Do not copy an earlier `tasks.sqlite` or result file into a v4 output directory; the current database belongs at `state/tasks.sqlite`.
+
+Every sample, full, dry-run, or validation directory uses the same organized layout:
+
+```text
+output/qwen32b_8gpu_v4_three_fields/
+|-- README.md                          # current status and where to start
+|-- results/                           # files intended for direct review
+|   |-- facebook_comments_annotation_review.xlsx # A:P plus Q:S; failed rows blank
+|   |-- annotations.csv                # original row plus successful annotation
+|   |-- facebook_selected_commenters_for_crawl.csv # relevant commenter/post/thread relations
+|   |-- errors.csv                     # original row plus unresolved error
+|   `-- run_summary.json               # counts and label distributions
+|-- final/                             # final annotated workbook after success
+|-- state/
+|   `-- tasks.sqlite                   # resume state; do not edit or delete
+|-- audit/                             # detailed provenance and machine records
+|   |-- run_manifest.json
+|   |-- validation_report.json
+|   |-- sample_selection.json
+|   |-- attempts.jsonl
+|   |-- valid_results.jsonl
+|   `-- errors.jsonl
+|-- logs/                              # annotation log for this run
+`-- FINALIZATION_BLOCKED.json          # present only while errors block finalization
+```
+
+The runner automatically migrates files from the earlier flat output layout into these folders before resuming. It refuses to continue if both a legacy path and an organized destination exist, preventing silent overwrites.
+
+Every completed or blocked model run regenerates `facebook_selected_commenters_for_crawl.csv` from the currently combined successful annotations. It includes only `strongly_relevant` and `relevant` rows with a non-`unusable` grade, expands the pipe-delimited commenter fields, and deduplicates by `commenter_id + post_mid + thread_id`.
+
+The legacy-repair launcher reads the preserved v2 `results/errors.csv` as its retry row list and the preserved v2 `results/annotations.csv` as a baseline. Twenty old successes use the mechanically inconsistent combination of a relevant label and `unusable`; the runner does not relabel them automatically and adds them to the retry set. Therefore 3,283 old rows are reused and 222 rows are sent through the current model contract. The launcher writes all new state to `output/qwen32b_8gpu_v4_legacy_error_repair/`; it does not modify the old run. Re-running the same launcher skips repaired successes and retries only remaining failures.
 
 ## Common overrides
 
