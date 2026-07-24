@@ -1,0 +1,101 @@
+﻿keyword,pair_count,keep_count,keep_rate,irrelevant_rate,keyword_exact_match_rate,keyword_token_match_rate
+abortion access,54,23,0.4259,0.5741,0.1667,0.7407
+ACA subsidies,51,38,0.7451,0.2353,0.4902,0.8824
+addiction treatment,52,15,0.2885,0.6346,0.2115,0.5385
+Affordable Connectivity Program,24,5,0.2083,0.75,0.2083,0.4167
+affordable daycare,2,0,0.0,1.0,0.0,0.5
+affordable housing,21,6,0.2857,0.7143,0.1905,0.7619
+AI deepfake,57,26,0.4561,0.4561,0.3158,0.5965
+AI robocall,3,3,1.0,0.0,0.3333,0.6667
+AI scam call,5,4,0.8,0.0,0.8,0.8
+asylum policy,54,4,0.0741,0.8889,0.0741,0.8889
+birth control cost,1,0,0.0,1.0,0.0,1.0
+border crisis,51,6,0.1176,0.5882,0.1176,0.4118
+border security,60,19,0.3167,0.4333,0.3167,0.5833
+border surveillance,60,24,0.4,0.4667,0.0833,0.7
+border technology,22,6,0.2727,0.6364,0.0,0.5909
+border wall,47,17,0.3617,0.4255,0.3617,0.6596
+broadband affordability,13,3,0.2308,0.7692,0.2308,0.8462
+carbon pricing,53,29,0.5472,0.3585,0.5472,0.7547
+carbon tax,54,34,0.6296,0.2407,0.6296,0.8333
+child care cost,3,0,0.0,1.0,0.0,0.0
+child care tax credit,3,0,0.0,1.0,0.0,1.0
+child tax credit,16,11,0.6875,0.1875,0.6875,0.8125
+climate change public health,2,0,0.0,1.0,0.0,0.5
+climate health,57,6,0.1053,0.8596,0.1053,0.8947
+climate tax,57,11,0.193,0.7018,0.193,0.6667
+college tuition,8,1,0.125,0.875,0.125,0.875
+concert ticket fees,1,0,0.0,1.0,0.0,1.0
+contraception access,51,24,0.4706,0.5294,0.1765,0.8824
+credit card late fees,5,1,0.2,0.8,0.2,1.0
+credit report,48,25,0.5208,0.3958,0.5208,0.9167
+data brokers,57,29,0.5088,0.4737,0.5088,0.8246
+data privacy,57,7,0.1228,0.807,0.1228,0.7018
+deepfake porn,39,13,0.3333,0.4872,0.2564,0.7692
+drug price negotiation,15,7,0.4667,0.5333,0.4667,0.8667
+energy prices,54,10,0.1852,0.7778,0.1852,0.6852
+energy security,51,19,0.3725,0.5686,0.3725,0.7451
+EV charging program,2,0,0.0,1.0,0.0,0.5
+EV tax credit,60,15,0.25,0.75,0.25,0.9167
+federal minimum wage,1,1,1.0,0.0,1.0,1.0
+FMLA,57,55,0.9649,0.0175,0.9825,0.9825
+food stamps,45,22,0.4889,0.4222,0.3778,0.6667
+foreign adversaries,16,10,0.625,0.3125,0.5,0.8125
+forever chemicals,39,25,0.641,0.2051,0.5128,0.6154
+fossil fuel exports,12,6,0.5,0.5,0.3333,0.6667
+free school meals,51,39,0.7647,0.2157,0.7647,0.9216
+George Floyd Justice in Policing Act,54,16,0.2963,0.6111,0.2407,0.5556
+gun trafficking,60,22,0.3667,0.4667,0.2833,0.7167
+gun violence,45,15,0.3333,0.6,0.3111,0.4889
+HALT Fentanyl Act,54,42,0.7778,0.2037,0.7778,0.9074
+health insurance subsidies,40,30,0.75,0.175,0.075,0.925
+healthcare affordability,45,9,0.2,0.8,0.1556,0.7111
+heat deaths,50,8,0.16,0.78,0.16,0.76
+hidden fees,49,9,0.1837,0.8163,0.1837,0.6939
+ICE raids,54,8,0.1481,0.7778,0.1481,0.8148
+immigration enforcement,56,33,0.5893,0.3929,0.5536,0.8571
+in vitro fertilization,42,39,0.9286,0.0,0.119,0.1667
+insulin prices,51,23,0.451,0.4706,0.2353,0.8235
+internet subsidy,7,2,0.2857,0.7143,0.1429,0.8571
+junk fees,48,14,0.2917,0.6875,0.2917,0.7292
+kids online safety,54,3,0.0556,0.8889,0.0556,0.8519
+KOSA,48,43,0.8958,0.0,1.0,1.0
+living wage,54,24,0.4444,0.4815,0.4444,0.537
+LNG exports,59,18,0.3051,0.6441,0.2712,0.6949
+medical bills,54,21,0.3889,0.5741,0.3889,0.6852
+medical debt,45,31,0.6889,0.3111,0.6889,0.8222
+mental health access,60,2,0.0333,0.9333,0.0333,0.8333
+naloxone,51,48,0.9412,0.0588,0.9412,0.9412
+natural gas exports,15,3,0.2,0.8,0.1333,0.7333
+net neutrality,55,25,0.4545,0.3091,0.4545,0.4545
+no tax on tips,7,6,0.8571,0.1429,0.8571,1.0
+online child safety,51,6,0.1176,0.8235,0.1176,0.7451
+online therapy,15,3,0.2,0.8,0.2,0.6667
+open internet,48,30,0.625,0.3333,0.5833,0.7917
+overdose reversal,25,3,0.12,0.88,0.12,0.88
+paid parental leave,33,24,0.7273,0.2424,0.6667,0.8182
+paid prioritization,6,1,0.1667,0.8333,0.1667,0.1667
+PBM reform,59,17,0.2881,0.7119,0.2881,0.6441
+PFAS water,1,1,1.0,0.0,0.0,1.0
+police accountability,54,21,0.3889,0.5,0.0556,0.6667
+prescription drug prices,54,32,0.5926,0.3333,0.2963,0.7963
+protect children online,49,1,0.0204,0.898,0.0204,0.8367
+qualified immunity,45,33,0.7333,0.2667,0.7333,0.7556
+rent too high,1,0,0.0,1.0,0.0,0.0
+reproductive healthcare,45,8,0.1778,0.8222,0.1778,0.5556
+reproductive rights,49,8,0.1633,0.7959,0.1429,0.449
+revenge porn,27,11,0.4074,0.1852,0.4074,0.4074
+safe gun storage,53,11,0.2075,0.7547,0.2075,0.7358
+school lunch debt,3,2,0.6667,0.3333,0.6667,1.0
+sensitive personal data,48,22,0.4583,0.25,0.2083,0.625
+student debt,51,10,0.1961,0.7843,0.1961,0.7843
+student loan default,7,0,0.0,1.0,0.0,1.0
+Take It Down Act,49,28,0.5714,0.3878,0.5714,0.6531
+telehealth mental health,54,21,0.3889,0.6111,0.1667,0.7037
+TICKET Act,32,17,0.5312,0.4062,0.5312,0.8438
+tipped workers,2,0,0.0,1.0,0.0,0.0
+transgender athletes,51,33,0.6471,0.2745,0.5098,0.8431
+vishing,48,48,1.0,0.0,1.0,1.0
+voice cloning scam,48,36,0.75,0.1458,0.1458,0.8958
+water filters,42,7,0.1667,0.619,0.1667,0.7381
+zoning reform,13,5,0.3846,0.6154,0.3846,0.7692

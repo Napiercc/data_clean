@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-07-24T14:51:22",
+  "scope": "New Instagram posts only; comments are not part of this run.",
+  "deduplication_key": [
+    "mid",
+    "topic"
+  ],
+  "deduplication_reference": "D:\\social_network\\benchmark\\socialmedia_data\\relevance_outputs_posts_only_by_platform\\Instagram\\Instagram_post_relevance_pairs.csv",
+  "cleaning_script": "D:\\social_network\\benchmark\\socialmedia_data\\clean_outputs\\clean_multi_platform_data.py",
+  "rule_filter_script": "D:\\social_network\\benchmark\\socialmedia_data\\relevance_outputs_posts_only\\relevance_filter_multi_platform_data.py",
+  "cleaning_filter_versions": {
+    "rule_filter_version": "rule_v1.3_multi_platform_2026-07-02",
+    "current_date_used_for_time_quality_flag_only": "2026-07-24"
+  },
+  "counts": {
+    "raw_records_by_file": {
+      "ig_comment_data.txt": 4669,
+      "ig_message_data.txt": 4597,
+      "ig_user_data.txt": 4625
+    },
+    "normalized_instagram_posts": 4526,
+    "new_unique_post_topic_pairs": 4526,
+    "already_in_historical_pairs": 815,
+    "duplicate_pairs_inside_new_batch": 0,
+    "raw_posts_excluded_during_normalization": 71,
+    "raw_posts_excluded_as_empty_text": 71,
+    "incremental_post_records": 3711,
+    "incremental_post_topic_pairs": 3711,
+    "rule_kept_for_qwen": 1532,
+    "rule_removed_before_qwen": 2179,
+    "topics_in_increment": 37,
+    "normalization_audit_rows": 131
+  },
+  "rule_label_counts": {
+    "relevant": 1416,
+    "irrelevant": 1917,
+    "weakly_relevant": 116,
+    "unclear": 213,
+    "low_information": 49
+  },
+  "source_sha256": {
+    "E:\\Users\\ASUS\\OneDrive\\Desktop\\ig_data\\ig_comment_data.txt": "247e614a5bac4ac970a3bb69341af5dd2dd80c5e187742151fb8a65d4296cf85",
+    "E:\\Users\\ASUS\\OneDrive\\Desktop\\ig_data\\ig_message_data.txt": "dc412a1f197ef210af82ce43cf7d5212204cccaeee56590d5c1fc4d42022ac7a",
+    "E:\\Users\\ASUS\\OneDrive\\Desktop\\ig_data\\ig_user_data.txt": "328a8d76f0ada3e08b84b0205097f6a1b2a6b9f7392e61f2f757612c14aa2690",
+    "D:\\social_network\\benchmark\\socialmedia_data\\relevance_outputs_posts_only_by_platform\\Instagram\\Instagram_post_relevance_pairs.csv": "be6535eee5498b08e552a161b1173cc079d3e84eb98e0ce6aa92f2e9584cf83e"
+  },
+  "outputs": {
+    "historical_pairs_excluded_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\00_audit\\historical_mid_topic_pairs_excluded.csv",
+    "new_batch_normalization_exclusions_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\00_audit\\new_batch_posts_excluded_during_normalization.csv",
+    "deduplicated_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\01_deduplicated\\instagram_incremental_posts.csv",
+    "deduplicated_jsonl": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\01_deduplicated\\instagram_incremental_posts.jsonl",
+    "rule_pairs_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\02_rule_filter\\instagram_incremental_post_relevance_pairs.csv",
+    "rule_filtered_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\02_rule_filter\\instagram_incremental_post_relevance_filtered.csv",
+    "rule_removed_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\02_rule_filter\\instagram_incremental_post_relevance_removed.csv",
+    "qwen_input_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\03_qwen_input\\instagram_incremental_qwen_input.csv",
+    "rule_report_html": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\incremental\\instagram_20260724\\02_rule_filter\\instagram_incremental_post_relevance_report.html"
+  }
+}
