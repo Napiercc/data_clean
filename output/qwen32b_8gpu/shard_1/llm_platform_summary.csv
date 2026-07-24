@@ -1,6 +1,0 @@
-﻿platform,row_count,success_count,error_count,error_rate,llm_keep_count,llm_keep_rate,has_stance_count,has_stance_rate,medium_high_discussion_count,medium_high_discussion_rate,strongly_relevant_count,relevant_count,weak_keyword_match_count,off_topic_count,insufficient_context_count
-YouTube,2542,2480,62,0.0244,793,0.312,794,0.3124,1837,0.7227,1807,512,141,0,20
-X,873,861,12,0.0137,540,0.6186,541,0.6197,668,0.7652,650,131,74,0,6
-Instagram,154,154,0,0.0,90,0.5844,90,0.5844,116,0.7532,141,12,1,0,0
-Facebook,38,38,0,0.0,14,0.3684,14,0.3684,24,0.6316,23,6,9,0,0
-Reddit,21,19,2,0.0952,4,0.1905,4,0.1905,6,0.2857,12,1,6,0,0

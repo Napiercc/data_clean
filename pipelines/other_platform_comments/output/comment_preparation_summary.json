@@ -1,0 +1,128 @@
+{
+  "generated_at": "2026-07-22T10:31:32+08:00",
+  "retained_posts_path": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\output\\qwen32b_8gpu\\merged\\llm_post_relevance_filtered.csv",
+  "retained_posts_sha256": "d2f746189f5ae3dc4aad5ac5709521985343fe3b52fd39d865727ae7658acdfc",
+  "messages_jsonl_path": "D:\\social_network\\benchmark\\socialmedia_data\\clean_outputs\\messages_clean.jsonl",
+  "raw_comment_dir": "D:\\social_network\\benchmark\\socialmedia_data",
+  "output_csv": "D:\\social_network\\benchmark\\data_clean\\pipelines\\other_platform_comments\\output\\matched_comments_for_annotation.csv",
+  "output_jsonl": "D:\\social_network\\benchmark\\data_clean\\pipelines\\other_platform_comments\\output\\matched_comments_for_annotation.jsonl",
+  "output_field_count": 25,
+  "annotation_unit": "one comment x one retained post x one topic",
+  "source_files_read_only": true,
+  "ambiguous_native_keys": 0,
+  "ambiguous_url_keys": 0,
+  "duplicate_matched_comments_skipped": {},
+  "totals": {
+    "retained_post_topic_pairs": 11455,
+    "retained_unique_posts": 11416,
+    "clean_comment_rows": 218172,
+    "matched_unique_posts": 3728,
+    "matched_unique_comments": 46193,
+    "annotation_rows": 46222,
+    "comments_with_parent_comment_id": 0
+  },
+  "platforms": [
+    {
+      "platform": "Instagram",
+      "retained_post_topic_pairs": 727,
+      "retained_unique_posts": 727,
+      "raw_comment_rows": 4933,
+      "raw_nonempty_comment_rows": 4902,
+      "raw_empty_comment_rows": 31,
+      "clean_comment_rows": 4728,
+      "matched_unique_posts": 226,
+      "matched_unique_comments": 1215,
+      "annotation_rows": 1215,
+      "unmatched_clean_comments": 3513,
+      "post_coverage_percent": 31.0867,
+      "clean_comment_match_percent": 25.698,
+      "comments_with_parent_comment_id": 0,
+      "relation_methods": "r_url:1,215"
+    },
+    {
+      "platform": "Reddit",
+      "retained_post_topic_pairs": 36,
+      "retained_unique_posts": 36,
+      "raw_comment_rows": 17137,
+      "raw_nonempty_comment_rows": 0,
+      "raw_empty_comment_rows": 17137,
+      "clean_comment_rows": 0,
+      "matched_unique_posts": 0,
+      "matched_unique_comments": 0,
+      "annotation_rows": 0,
+      "unmatched_clean_comments": 0,
+      "post_coverage_percent": 0.0,
+      "clean_comment_match_percent": 0.0,
+      "comments_with_parent_comment_id": 0,
+      "relation_methods": ""
+    },
+    {
+      "platform": "X",
+      "retained_post_topic_pairs": 4400,
+      "retained_unique_posts": 4367,
+      "raw_comment_rows": 0,
+      "raw_nonempty_comment_rows": 0,
+      "raw_empty_comment_rows": 0,
+      "clean_comment_rows": 0,
+      "matched_unique_posts": 0,
+      "matched_unique_comments": 0,
+      "annotation_rows": 0,
+      "unmatched_clean_comments": 0,
+      "post_coverage_percent": 0.0,
+      "clean_comment_match_percent": 0.0,
+      "comments_with_parent_comment_id": 0,
+      "relation_methods": ""
+    },
+    {
+      "platform": "YouTube",
+      "retained_post_topic_pairs": 6292,
+      "retained_unique_posts": 6286,
+      "raw_comment_rows": 250202,
+      "raw_nonempty_comment_rows": 250192,
+      "raw_empty_comment_rows": 10,
+      "clean_comment_rows": 213444,
+      "matched_unique_posts": 3502,
+      "matched_unique_comments": 44978,
+      "annotation_rows": 45007,
+      "unmatched_clean_comments": 168466,
+      "post_coverage_percent": 55.7111,
+      "clean_comment_match_percent": 21.0725,
+      "comments_with_parent_comment_id": 0,
+      "relation_methods": "r_native:44,978"
+    }
+  ],
+  "notes": [
+    "Only non-Facebook platforms are included.",
+    "Instagram currently joins by normalized r_url; YouTube joins by r_mid/native video ID.",
+    "Reddit raw comment rows have empty text and therefore produce no annotation rows.",
+    "X has no source comment file in the supplied socialmedia_data snapshot.",
+    "parent_comment_id is preserved when present; the current matched data has no usable parent-comment links."
+  ],
+  "source_states": [
+    {
+      "path": "D:\\social_network\\benchmark\\data_clean\\pipelines\\post_filter\\output\\qwen32b_8gpu\\merged\\llm_post_relevance_filtered.csv",
+      "size": 27151014,
+      "mtime_ns": 1784599612137824900
+    },
+    {
+      "path": "D:\\social_network\\benchmark\\socialmedia_data\\clean_outputs\\messages_clean.jsonl",
+      "size": 795182582,
+      "mtime_ns": 1782968060361078700
+    },
+    {
+      "path": "D:\\social_network\\benchmark\\socialmedia_data\\ig_comment_data(部分).txt",
+      "size": 5061801,
+      "mtime_ns": 1782966227049111500
+    },
+    {
+      "path": "D:\\social_network\\benchmark\\socialmedia_data\\red_comment_data.txt",
+      "size": 16884909,
+      "mtime_ns": 1782966227219167700
+    },
+    {
+      "path": "D:\\social_network\\benchmark\\socialmedia_data\\ytb_comment_data.txt",
+      "size": 238481920,
+      "mtime_ns": 1782966229122799700
+    }
+  ]
+}

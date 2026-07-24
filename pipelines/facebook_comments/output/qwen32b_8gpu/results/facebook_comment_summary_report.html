@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facebook 评论筛选报告</title>
+<style>
+:root { --ink:#17212b; --muted:#61707d; --line:#dbe2e8; --panel:#fff; --page:#f4f7f9; --blue:#0b5f7e; --green:#1f7a45; --amber:#93630c; --red:#a33a3a; --soft-green:#e9f6ee; --soft-amber:#fff4d9; --soft-red:#fdecec; }
+* { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--page); font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
+header { color:white; background:linear-gradient(125deg,#10384b,#0b637d 60%,#2d7c72); } .header-inner,main { width:min(1180px,calc(100% - 32px)); margin:auto; } .header-inner { padding:34px 0 30px; }
+h1 { margin:0 0 7px; font-size:30px; } h2 { margin:0; font-size:20px; } .subtitle { margin:0; color:#dcebf0; }
+.status { display:inline-flex; margin-top:16px; padding:6px 10px; border-radius:999px; background:#fff1; border:1px solid #ffffff55; font-weight:700; }
+main { padding:22px 0 38px; } section { margin:0 0 18px; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:0 7px 20px #1327330c; }
+.section-head { display:flex; justify-content:space-between; gap:12px; margin-bottom:13px; } .hint,.metric-note,.sample-meta { color:var(--muted); } .hint { margin:3px 0 0; font-size:13px; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; } .metric { padding:14px; border:1px solid var(--line); border-top:4px solid #8796a2; border-radius:9px; } .metric.good { border-top-color:var(--green); } .metric.warn { border-top-color:var(--amber); } .metric.bad { border-top-color:var(--red); }
+.metric-label { color:var(--muted); font-size:12px; font-weight:700; } .metric-value { margin:3px 0; font-size:27px; font-weight:750; font-variant-numeric:tabular-nums; } .metric-note { font-size:12px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; } .callout { padding:12px 13px; border-left:4px solid var(--blue); border-radius:6px; background:#eef7fa; } .callout.good { border-color:var(--green); background:var(--soft-green); } .callout.warn { border-color:var(--amber); background:var(--soft-amber); } .callout.bad { border-color:var(--red); background:var(--soft-red); }
+.callout-list { display:grid; gap:9px; } .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:8px; } table { width:100%; border-collapse:collapse; } th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:13px; } th { background:#edf2f5; color:#3e4b57; white-space:nowrap; } tr:last-child td { border-bottom:0; } .num { text-align:right; font-variant-numeric:tabular-nums; } .topic { display:block; min-width:300px; max-width:520px; }
+.tag { display:inline-flex; align-items:center; min-height:22px; margin:1px 2px; padding:2px 7px; border-radius:999px; background:#edf1f4; color:#34424e; font-size:12px; font-weight:700; } .tag.good { background:var(--soft-green); color:#1d6a39; } .tag.warn { background:var(--soft-amber); color:#744a09; } .tag.bad { background:var(--soft-red); color:#963232; }
+.samples { display:grid; gap:11px; } .sample { padding:14px; border:1px solid var(--line); border-left:4px solid var(--green); border-radius:9px; background:#fcfdfd; } .sample.excluded { border-left-color:var(--amber); } .sample.unresolved { border-left-color:var(--red); } .sample-top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; } .sample-meta { margin:5px 0 8px; font-size:12px; overflow-wrap:anywhere; } .sample-block { margin-top:7px; white-space:pre-wrap; overflow-wrap:anywhere; } .conversation { padding:10px; border-radius:7px; background:#f3f6f8; } .reason { color:#294b3b; } .sample-links { margin-top:9px; } a { color:var(--blue); }
+.footer { color:var(--muted); font-size:12px; overflow-wrap:anywhere; } code { padding:1px 4px; border-radius:4px; background:#eef2f5; }
+@media (max-width:900px) { .metrics,.grid-2 { grid-template-columns:1fr 1fr; } .sample-top { display:block; } } @media (max-width:600px) { .metrics,.grid-2 { grid-template-columns:1fr; } h1 { font-size:25px; } }
+</style>
+</head>
+<body>
+<header><div class="header-inner">
+  <h1>Facebook 评论筛选报告</h1>
+  <p class="subtitle">标注单位：一个根评论及其全部回复。生成时间：2026-07-21T19:34:43+08:00</p>
+  <div class="status">当前状态：尚未最终完成</div>
+</div></header>
+<main>
+<section><div class="metrics">
+  <div class="metric "><div class="metric-label">评论线程总数</div><div class="metric-value">3,505</div><div class="metric-note">62 个帖子 / 3,505 个唯一线程</div></div>
+  <div class="metric good"><div class="metric-label">成功标注</div><div class="metric-value">3,303</div><div class="metric-note">完成率 94.2%</div></div>
+  <div class="metric warn"><div class="metric-label">当前保留</div><div class="metric-value">1,135</div><div class="metric-note">占成功标注 34.4%</div></div>
+  <div class="metric bad"><div class="metric-label">未解决</div><div class="metric-value">202</div><div class="metric-note">占全部线程 5.8%</div></div>
+</div></section>
+
+<section><div class="section-head"><div><h2>结论与口径</h2><p class="hint">报告只使用最新三字段工作簿，不重新引入立场字段。</p></div></div>
+<div class="callout-list">
+  <div class="callout bad"><strong>运行完整性：</strong>3,303 条有效标注，202 条仍为空；因此当前报告是复核版，不是最终封版。</div>
+  <div class="callout"><strong>保留规则：</strong><code>topic_relevance ∈ {strongly_relevant, relevant}</code> 且 <code>training_grade != unusable</code>。共保留 1,135 个线程。</div>
+  <div class="callout warn"><strong>人工复核：</strong><code>relevant_context_only</code> 和 <code>borderline_sample</code> 按当前宽松口径保留，但应优先进入人工审查。</div>
+  <div class="callout"><strong>模型与来源：</strong>Qwen3-32B；源工作簿 SHA-256 为 <code>965aa68f51d37f8d5355700c4af201e4b840dd88efb62e6cbfc9198bb34b684a</code>，生成前后未改变。</div>
+</div></section>
+
+<section><div class="grid-2"><div><div class="section-head"><div><h2>主题相关性</h2><p class="hint">占全部 3,505 个线程。</p></div></div><div class="table-wrap"><table><thead><tr><th class="">标签</th><th class="num">数量</th><th class="">占比</th></tr></thead><tbody><tr><td class=""><span class="tag good" title="strongly_relevant">高度相关</span></td><td class="num">778</td><td class="">22.2%</td></tr><tr><td class=""><span class="tag warn" title="relevant">相关</span></td><td class="num">377</td><td class="">10.8%</td></tr><tr><td class=""><span class="tag bad" title="off_topic">不相关</span></td><td class="num">2,148</td><td class="">61.3%</td></tr><tr><td class=""><span class="tag bad" title="unresolved">未解决</span></td><td class="num">202</td><td class="">5.8%</td></tr></tbody></table></div></div>
+<div><div class="section-head"><div><h2>训练可用等级</h2><p class="hint">未解决行单列显示。</p></div></div><div class="table-wrap"><table><thead><tr><th class="">标签</th><th class="num">数量</th><th class="">占比</th></tr></thead><tbody><tr><td class=""><span class="tag good" title="core_usable">核心可用</span></td><td class="num">309</td><td class="">8.8%</td></tr><tr><td class=""><span class="tag good" title="generally_usable">一般可用</span></td><td class="num">484</td><td class="">13.8%</td></tr><tr><td class=""><span class="tag warn" title="relevant_context_only">仅作相关语境</span></td><td class="num">297</td><td class="">8.5%</td></tr><tr><td class=""><span class="tag warn" title="borderline_sample">边界样本</span></td><td class="num">45</td><td class="">1.3%</td></tr><tr><td class=""><span class="tag bad" title="unusable">不可用</span></td><td class="num">2,168</td><td class="">61.9%</td></tr><tr><td class=""><span class="tag bad" title="unresolved">未解决</span></td><td class="num">202</td><td class="">5.8%</td></tr></tbody></table></div></div></div></section>
+
+<section><div class="section-head"><div><h2>线程结构与后续爬取</h2><p class="hint">消息数来自工作簿；评论者统计来自当前 crawl CSV。</p></div></div>
+<div class="metrics">
+  <div class="metric "><div class="metric-label">消息总数</div><div class="metric-value">5,659</div><div class="metric-note">回复 2,154 条</div></div>
+  <div class="metric "><div class="metric-label">含回复线程</div><div class="metric-value">481</div><div class="metric-note">占全部线程 13.7%</div></div>
+  <div class="metric "><div class="metric-label">线程消息 P50 / P90 / Max</div><div class="metric-value">1 / 2 / 136</div><div class="metric-note">按线程统计</div></div>
+  <div class="metric good"><div class="metric-label">可继续爬取的评论者</div><div class="metric-value">1,569</div><div class="metric-note">1,702 条关系 / 1,135 个线程 / 50 个帖子</div></div>
+</div></section>
+
+<section><div class="section-head"><div><h2>未解决错误</h2><p class="hint">来自 errors.csv；这些行没有进入当前保留集合。</p></div></div><div class="table-wrap"><table><thead><tr><th class="">错误代码</th><th class="num">数量</th><th class="">占未解决</th></tr></thead><tbody><tr><td class="">semantic_validation_failed</td><td class="num">115</td><td class="">56.9%</td></tr><tr><td class="">repeated_invalid_response</td><td class="num">87</td><td class="">43.1%</td></tr></tbody></table></div></section>
+
+<section><div class="section-head"><div><h2>按 Topic 汇总</h2><p class="hint">保留率以该 Topic 成功标注行作为分母。</p></div></div><div class="table-wrap"><table><thead><tr><th class="">Topic</th><th class="num">总线程</th><th class="num">成功</th><th class="num">保留</th><th class="">成功口径保留率</th><th class="num">未解决</th></tr></thead><tbody><tr><td class=""><span class="topic">Should the United States adopt stricter regulation and criminal enforcement against fentanyl?</span></td><td class="num">1,233</td><td class="num">1,163</td><td class="num">498</td><td class="">42.8%</td><td class="num">70</td></tr><tr><td class=""><span class="topic">Should concert and sporting-event tickets be required to display the full price?</span></td><td class="num">591</td><td class="num">569</td><td class="num">117</td><td class="">20.6%</td><td class="num">22</td></tr><tr><td class=""><span class="topic">Should the United States impose or avoid a carbon tax?</span></td><td class="num">380</td><td class="num">359</td><td class="num">96</td><td class="">26.7%</td><td class="num">21</td></tr><tr><td class=""><span class="topic">Should medical debt be excluded from personal credit records?</span></td><td class="num">333</td><td class="num">305</td><td class="num">107</td><td class="">35.1%</td><td class="num">28</td></tr><tr><td class=""><span class="topic">Should data brokers be prohibited from selling sensitive personal data?</span></td><td class="num">324</td><td class="num">319</td><td class="num">85</td><td class="">26.6%</td><td class="num">5</td></tr><tr><td class=""><span class="topic">Should health-insurance premium subsidies be extended or expanded?</span></td><td class="num">108</td><td class="num">93</td><td class="num">46</td><td class="">49.5%</td><td class="num">15</td></tr><tr><td class=""><span class="topic">Should net-neutrality rules be restored or strengthened?</span></td><td class="num">92</td><td class="num">86</td><td class="num">45</td><td class="">52.3%</td><td class="num">6</td></tr><tr><td class=""><span class="topic">Should tip income be exempt from taxation?</span></td><td class="num">68</td><td class="num">68</td><td class="num">10</td><td class="">14.7%</td><td class="num">0</td></tr><tr><td class=""><span class="topic">Should the United States expand the supply of affordable housing?</span></td><td class="num">58</td><td class="num">56</td><td class="num">11</td><td class="">19.6%</td><td class="num">2</td></tr><tr><td class=""><span class="topic">Should the federal minimum wage be raised?</span></td><td class="num">52</td><td class="num">46</td><td class="num">21</td><td class="">45.7%</td><td class="num">6</td></tr><tr><td class=""><span class="topic">Should the government protect access to abortion services?</span></td><td class="num">44</td><td class="num">40</td><td class="num">25</td><td class="">62.5%</td><td class="num">4</td></tr><tr><td class=""><span class="topic">Should contraceptive services be exempt from out-of-pocket costs?</span></td><td class="num">42</td><td class="num">38</td><td class="num">12</td><td class="">31.6%</td><td class="num">4</td></tr><tr><td class=""><span class="topic">Should paid family and parental leave be provided?</span></td><td class="num">38</td><td class="num">35</td><td class="num">8</td><td class="">22.9%</td><td class="num">3</td></tr><tr><td class=""><span class="topic">Should the government expand access to opioid-overdose reversal drugs such as naloxone?</span></td><td class="num">30</td><td class="num">28</td><td class="num">18</td><td class="">64.3%</td><td class="num">2</td></tr><tr><td class=""><span class="topic">Should police accountability be strengthened and qualified immunity be limited?</span></td><td class="num">28</td><td class="num">22</td><td class="num">10</td><td class="">45.5%</td><td class="num">6</td></tr><tr><td class=""><span class="topic">Should transgender athletes be allowed to compete in women&#x27;s sports?</span></td><td class="num">27</td><td class="num">26</td><td class="num">2</td><td class="">7.7%</td><td class="num">1</td></tr><tr><td class=""><span class="topic">Should IVF and other assisted-reproduction treatments receive greater public support?</span></td><td class="num">15</td><td class="num">13</td><td class="num">2</td><td class="">15.4%</td><td class="num">2</td></tr><tr><td class=""><span class="topic">Should college students have easier access to SNAP food assistance?</span></td><td class="num">11</td><td class="num">8</td><td class="num">5</td><td class="">62.5%</td><td class="num">3</td></tr><tr><td class=""><span class="topic">Should credit-card late fees be capped?</span></td><td class="num">9</td><td class="num">9</td><td class="num">2</td><td class="">22.2%</td><td class="num">0</td></tr><tr><td class=""><span class="topic">Should free school meals be expanded?</span></td><td class="num">9</td><td class="num">7</td><td class="num">6</td><td class="">85.7%</td><td class="num">2</td></tr><tr><td class=""><span class="topic">Should the government subsidize household water-filtration equipment to address PFAS and other contaminants?</span></td><td class="num">9</td><td class="num">9</td><td class="num">8</td><td class="">88.9%</td><td class="num">0</td></tr><tr><td class=""><span class="topic">Should platforms be required to remove nonconsensual AI-generated intimate deepfakes?</span></td><td class="num">3</td><td class="num">3</td><td class="num">0</td><td class="">0.0%</td><td class="num">0</td></tr><tr><td class=""><span class="topic">Should AI-generated voice content used in scams be subject to mandatory disclosure or restrictions?</span></td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="">100.0%</td><td class="num">0</td></tr></tbody></table></div></section>
+
+<section><div class="section-head"><div><h2>可用线程固定抽样</h2><p class="hint">跨 Topic 固定抽取 12 条；随机种子 20260721。</p></div></div><div class="samples">
+<article class="sample usable">
+  <div class="sample-top"><strong>#1 · Should tip income be exempt from taxation?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="core_usable">核心可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1019087827744746 · post_mid: Facebook:post:pfbid0fvBQdqyufPCe4vMCRc69Zdt6L8VgLgFBjChKFKrU2N5iw2HA8pGFhAuWTnt7afb4l · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Every month, working families in South Texas keep more of what they earn. No tax on tips. No tax on overtime. Tax relief on Social Security. For the families balancing the budget at the kitchen table, that breathing room matters. I will keep fighting to lower costs and reward hard work.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Victor Enrique Rodriguez [ROOT COMMENT]:
+Yet she supports trump who thanks to that idiot and his maga morons everything went up. Gas. Groceries. Utilities and no tax on overtime ITS A LIE! THEY TAX YOU MORE. FK MAGA</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Strongly relevant to the topic with explicit opposition to the claim. The comment criticizes the post&#x27;s stance and mentions &#x27;no tax on overtime&#x27; as a lie.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/monicaforcongress/posts/pfbid0fvBQdqyufPCe4vMCRc69Zdt6L8VgLgFBjChKFKrU2N5iw2HA8pGFhAuWTnt7afb4l" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/monicaforcongress/posts/pfbid02jbbAXPwgyHUHoHmz8jvNM5sBST4VAM8Nxk4CiWuSki1MH9Xrm4i9nm6ZzHguBbSnl?comment_id=1019087827744746&amp;__cft__[0]=AZYPy4ja1X8Z0_yLhD5716-FmPPpfTVmMolbmA0-87xVeKI9KcJ91-d3zszk1V7k3UVlc_vNijo2HWlMB3GkKN1Woo4tbLWw1YnixoPcQqTQhyK6g65cmvomUVml1gOr4CAn1RIWXWqCMSqWxMHpsvY23kNU9GeF5zESoz6d5nVSSg&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#2 · Should data brokers be prohibited from selling sensitive personal data?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="core_usable">核心可用</span></span></div>
+  <div class="sample-meta">thread_id: id:2111619186085864 · post_mid: Facebook:post:pfbid02me4wWXiqYmjCzWJPv4X6MHGcqmb2FVuSyCoqKPfAW8RZmKGodQWeuspQ3wCNSKs6l · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>The single greatest threat to our national security right now is not unfolding across the ocean but right here in our own backyard. Foreign adversaries are quietly buying up the very soil we rely on to survive. JD Vance is stepping up to stop Beijing from taking over our agricultural supply chain. This is exactly what common sense leadership looks like and it is time we protect the food security of American families.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Linette Winsler [ROOT COMMENT]:
+ABSOLUTELY YES</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Strongly relevant to the topic with explicit support for the claim in the post.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid02me4wWXiqYmjCzWJPv4X6MHGcqmb2FVuSyCoqKPfAW8RZmKGodQWeuspQ3wCNSKs6l&amp;id=61556188681835" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/permalink.php?story_fbid=pfbid0hvPoJF8S9tHDwUVyAXybcVQ856FZjPWFb79WC1PTTVFDAHdXGBFYbzfShGyrzgyNl&amp;id=61556188681835&amp;comment_id=2111619186085864&amp;__cft__[0]=AZamsD0BqQVizTL1tAwJYFGICzKt77jWoixGLPHWLNqK5chHyDt91BZZeUvkX5l-udpzvbWK9TRHle7rUblYmTWIlEntC2nWTzmVcAYmwXEmaKptROTdhoXhaf4KRvw9-8lLtlEDLVE-sRLJD979502BSJkYUNJjYkXOKk105fwNQQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#3 · Should IVF and other assisted-reproduction treatments receive greater public support?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="core_usable">核心可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1024010590210138 · post_mid: Facebook:post:pfbid02WaPT5BqpbCnERsQaV4x5hPn7VT9uUtkwkdjjE7irkNdy821D1LrQ322PjterHVPpl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>The Trump Administration is quietly redefining frozen embryos as “children” in a federal grant program, another step toward fetal personhood that could threaten IVF access and lay the groundwork for a nationwide abortion ban.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Doug Nehas [ROOT COMMENT]:
+FO RAJA! Life begins at conception!</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Strongly relevant to the topic with explicit stance supporting the post&#x27;s claim about redefining embryos as children.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/CongressmanRaja/posts/pfbid02WaPT5BqpbCnERsQaV4x5hPn7VT9uUtkwkdjjE7irkNdy821D1LrQ322PjterHVPpl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/CongressmanRaja/posts/pfbid0SriJruFRCT1DpFPsRKNGq4LmEXq7ve2PowEuQUbYZKpwkTrpJUJPoqYrCYkoe8xol?comment_id=1024010590210138&amp;__cft__[0]=AZb6kWSAaDRRHvEZTkvCqCX5ZPOPiDc3blCd3ip0cmjh2awNw1l71ee58a320lDvAv02CG11-gyVQyYCl57ys_10N6OXv4uOS26HXq9dC8TCte945D8oNISkYbDISYnvlZt8Vs2q5v0LwmgRbO5Hmu-G1YYDBXrj502PrgLcoeBfyQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#4 · Should the federal minimum wage be raised?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="generally_usable">一般可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1170583266146790 · post_mid: Facebook:post:pfbid0oeVF3oAkcxeUhSgt3do6FdFBGU3VSsJtu5qyVosbr85nxnY5ksnDg32awax1ju1il · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Federal minimum wage is still just $7.25 an hour. A basic turkey sandwich at Panera costs $10.29. People quickly notice when an hour of work isn&#x27;t enough to pay for lunch while rent, groceries, and other everyday expenses keep rising.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Michael D&#x27;Arezzo [ROOT COMMENT]:
+have you ever tried a Panera Turkey &amp; Cheddar Sandwich? THEY ARE AMAZING.
+and Many Jobs pay more than $10.29/hr, Try applying for one of those jobs.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Comment is relevant by addressing the cost of a Panera sandwich and implies stance by suggesting higher-paying jobs exist.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid0oeVF3oAkcxeUhSgt3do6FdFBGU3VSsJtu5qyVosbr85nxnY5ksnDg32awax1ju1il&amp;id=61564876299387" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/permalink.php?story_fbid=pfbid02sKtzwM8XvkDroeX5241DW4USfz9k9VKfrih3HnsyBWrUpq1Q7nUM6bqUdx3dBerZl&amp;id=61564876299387&amp;comment_id=1170583266146790&amp;__cft__[0]=AZa_yHtBEDH85sm2Iy-DZFaw0ppNN_97dT0B8BL-xLnq2DOuv9YWCf0lL42lrMHXZIEDqmk3EzF2rvNGbZkuUJqM1Gr_euRUTh2qRfdZ_wmxyykU3pT8_uXTGl2xtakhITMV7Ho0mI9lcmhcJKGdfxEZE0m7gx-LvwCuvOnm8Szilw&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#5 · Should the United States impose or avoid a carbon tax?</strong><span><span class="tag warn" title="relevant">相关</span> <span class="tag good" title="generally_usable">一般可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1644642593502616 · post_mid: Facebook:post:pfbid02LZHFAnu2jeno9W1Hkvfwxi9rDF4sTGY7fbWtfuLN36fckVDjfjqmTHpHMhzCeHryl · messages: 2 · replies: 1</div>
+  <div class="sample-block"><strong>帖子：</strong>Fake Moderate Spanberger when Democrats pass a $500 million carbon tax on working families instead of making life more affordable:</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Chester Powell [ROOT COMMENT]:
+Hey blue your gona pay too ! Lol 😂 serves you right !
+
+2. Leigh Pickering [REPLY]:
+Chester Powell pay for what? Clean air? Clean water?
+OH THE HORROR!
+Dum(b) as …</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The thread is relevant due to the context of the carbon tax in the post, but the comments do not directly mention carbon tax or related terms. The stance is implicit in the sarcastic tone and the reference to &#x27;clean air&#x27; and &#x27;clean water&#x27;, which are related to environmental policy.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/VirginiaGOP/posts/pfbid02LZHFAnu2jeno9W1Hkvfwxi9rDF4sTGY7fbWtfuLN36fckVDjfjqmTHpHMhzCeHryl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/VirginiaGOP/posts/pfbid0Gqc6xWJdLqViJFubPQrVzeWJv97pQpkQZq6QTSByoiQ1Vy14Y6djmZQhkEgj4Yfsl?comment_id=1644642593502616&amp;__cft__[0]=AZaad0mDrIAE_OnNlRVPB76r-IsLNO4GyKHnsGBhiFhEljLyHJdIs6XIwtpWp13PS_2XxN0ANyUQiWu2Q0ogn5hSeT3-gFs36FZcSl5TZiEnNk9FZP9dSMIRmB_dyjlWOZY9ksrneBotD3yspJiz1sbUVGV0j7cZ8P5etFP4r_Jl9A&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#6 · Should contraceptive services be exempt from out-of-pocket costs?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="core_usable">核心可用</span></span></div>
+  <div class="sample-meta">thread_id: id:2326056091535119 · post_mid: Facebook:post:pfbid0UAAR2BfMzbAUvYmdwSYf4pLF7wYX2tPtJF43DzFhviKfmkhyHZcKKU9kzfbUio1Vl · messages: 4 · replies: 3</div>
+  <div class="sample-block"><strong>帖子：</strong>As we approach the fourth anniversary of the Dobbs decision, one thing is clear — the fight isn&#x27;t over. Every person deserves access to the reproductive healthcare they need without barriers and without shame.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Diane Bennett [ROOT COMMENT]:
+Abortion kills an innocent baby. It is not healthcare.
+
+2. Vanessa Farmer Rush [REPLY]:
+Diane Bennett what baby
+
+3. Vanessa Farmer Rush [REPLY]:
+Diane Bennett what god
+
+4. Diane Bennett [REPLY]:
+Vanessa Farmer Rush The baby in the womb that is made in God&#x27;s image - that baby.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Thread discusses abortion as healthcare, directly relevant to the topic. Explicit stance expressed by Diane Bennett opposing reproductive healthcare access. Clear disagreement between participants.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/RepNikkiBudzinski/posts/pfbid0UAAR2BfMzbAUvYmdwSYf4pLF7wYX2tPtJF43DzFhviKfmkhyHZcKKU9kzfbUio1Vl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/RepNikkiBudzinski/posts/pfbid02XqaAujd9JdpjzLr1joepLY1vHRVbuGa9nL9gScwj8u4McZ84ZZ5Rn41AZKLSZUztl?comment_id=2326056091535119&amp;__cft__[0]=AZZqGnEyWQ6rTstjZLFy81xIfuVGSjYfl_e8BtksEEZmSn0xpA8B66nX62vO0SmLYb8vXR5Iw5g4TP2Y7-DYb5ND31S9_g3gW4_nWvh0jrywgW5AT7RS7D0s-9xpAHFriVo0f0L-DYchS1lTF3nDD2Z-eKtuhVV_IuQ_4LxL6Xd-5g&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#7 · Should the government expand access to opioid-overdose reversal drugs such as naloxone?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="core_usable">核心可用</span></span></div>
+  <div class="sample-meta">thread_id: id:970806619289453 · post_mid: Facebook:post:pfbid02X1iytCwXyPobCHyWyL5Yop6W3jN4YMzJUdDmSijHy2zrBkEwowg4cSN5pagch2Mjl · messages: 36 · replies: 35</div>
+  <div class="sample-block"><strong>帖子：</strong>For me, House Bill 403 is a no.
+The opioid crisis is real, and we should continue supporting efforts that save lives. However, requiring every tavern and taproom in Delaware to purchase Narcan, maintain an inventory, and provide state-mandated employee training places another unfunded mandate on small businesses that are already dealing with rising costs and increasing regulations.
+Business owners should have the freedom to voluntarily stock Narcan and train their staff if they choose, but I do not believe the state should require it. We need solutions that address addiction and overdose prevention without placing additional burdens on Delaware’s local businesses.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Kat Angus [ROOT COMMENT]:
+Mike Simpler is spreading misinformation again, and this post makes it clear he either did not read HB 403 or chose not to accurately represent what it does.
+HB 403 does not create the massive regulatory burden he describes. It requires licensed taverns and taprooms to maintain opioid overdose reversal medication and ensure staff know how to respond during an overdose emergency. It also provides liability protections for employees who act in good faith.
+What&#x27;s especially misleading is his claim that this is some unprecedented burden on businesses. Delaware already requires anyone who serves or sells alcohol to complete Responsible Server Training and pass a state-approved course. The state has long recognized that businesses serving the public have a responsibility to help keep people safe.
+And let&#x27;s be honest about the crisis we&#x27;re talking about. Delaware confirmed 338 overdose deaths in 2024. While that was a significant improvement from previous years, it still means hundreds of Delaware families lost loved ones. Delaware continues to have one of the highest overdose death rates in the nation, and public health officials have directly credited expanded naloxone access as one of the reasons overdose deaths have declined.
+This bill isn&#x27;t about people &quot;drinking at a bar.&quot; Overdoses happen everywhere: restaurants, parking lots, hotels, public events, private residences, workplaces, and businesses open to the public. Narcan only works if it is available when an emergency occurs.
+Voters deserve elected officials who debate the actual contents of legislation instead of inventing talking points about &quot;unfunded mandates.&quot; If you&#x27;re running for office, the bare minimum should be reading the bill before misrepresenting it to the public.
+
+2. Geoff Klopp [REPLY]:
+Kat Angus I understand what you’re saying, and I don’t necessarily know what the right answer is. Yes this is a difficult issue to deal with, but I don’t feel like these are steps in the right direction. Every addict is different and trust me I know that, but I also know how they think and this feels like one more loophole for an addict. I don’t want anyone to die from an overdose. B…</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Strongly relevant to opioid-overdose reversal policy, with explicit support for HB 403 and explicit opposition from multiple participants. The thread includes detailed policy arguments and clear stance shifts.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/msimpler/posts/pfbid02X1iytCwXyPobCHyWyL5Yop6W3jN4YMzJUdDmSijHy2zrBkEwowg4cSN5pagch2Mjl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/msimpler/posts/pfbid0TJ3qfvM8abSjmH5YRxXp5vJ6627pDKqgXjdZuSTyiQkNbjP2UVCLbkXvNxiJC1qwl?comment_id=970806619289453&amp;__cft__[0]=AZauiIxfUNJGUBh4w_VKq8dnjCQbjF47Cr_mkeTYD3aIqeeSANUXGOeX5ToI1D2kThu2DSmPogLsImftBjhxrn043FKfkVobC-Dqfp0Q5dXs7Ubyu-4_7kmsHd6oSAaYZLvSZ_s32gIdzxr4JKaonZsj&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#8 · Should the United States adopt stricter regulation and criminal enforcement against fentanyl?</strong><span><span class="tag warn" title="relevant">相关</span> <span class="tag good" title="generally_usable">一般可用</span></span></div>
+  <div class="sample-meta">thread_id: id:626808749895104 · post_mid: Facebook:post:pfbid02BuMKoL8qwwjYkpsadxZQE6HJtyWNoTXXt1URLVXj8awyCF9b2dXDmdtXzAy933dil · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Joined by families devastated by fentanyl, President Donald Trump signed the HALT Fentanyl Act into law on Wednesday, July 16, saying, “As of today, all fentanyl-related substances will be banned forever, and those who traffic in these deadly poisons will be put behind bars for a very long period of time.” Passed as a largely bipartisan bill, this law will permanently categorize fentanyl-related substances as a schedule I drug. Here, Trump can be seen holding a photo of Weston Fundner, who died at the age of 15 from unintentional illicit-fentanyl exposure.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Ryan Huisenga [ROOT COMMENT]:
+So does that include hospital doses used on patients? Cause sometimes fent is needed in hospitals. It&#x27;s the people who think they need to get high off fent that need help!!</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is relevant as it discusses fentanyl use in hospitals and implies a stance on regulation, but no direct topic terms appear in the text.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/countryrebelclothing/posts/pfbid02BuMKoL8qwwjYkpsadxZQE6HJtyWNoTXXt1URLVXj8awyCF9b2dXDmdtXzAy933dil" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/countryrebelclothing/posts/pfbid08BgBb3YSZAzrS4DHPQPGecAtQQVXb5iYSFNTUHCYfjELm6qN9Wyab83fAcAoUTy9l?comment_id=626808749895104&amp;__cft__[0]=AZZhqzFm5SGLbFYWZFSOlF6VxWCrftb5pKJTZVOBUVvWLLJYjkCtRHabAG1MTy891AK7oJgPbxbnDHH23WJ7dkEVq951kVKFVVMnNvpncvnBQD_Rw4qOKQWxI_Rt5l9qc0DUXTf3y_kOVf5tm2C9yaPECq0zg7JPA_Df46zRAp1Hlg&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#9 · Should net-neutrality rules be restored or strengthened?</strong><span><span class="tag warn" title="relevant">相关</span> <span class="tag warn" title="relevant_context_only">仅作相关语境</span></span></div>
+  <div class="sample-meta">thread_id: id:3951175855184663 · post_mid: Facebook:post:pfbid02GTkPZzMDXjmNFMFK9vxUqTrxtDjFUPAg2Tqo48djMCEs3kGpUWWbT92E5bYerwiXl · messages: 4 · replies: 3</div>
+  <div class="sample-block"><strong>帖子：</strong>The open internet - one of the greatest forces for freedom and human progress in history - is under threat
+A “social media ban for children” will ultimately mean ID checks for all of us before we can speak online
+#DontIDTheInternet!
+Sign your support + get action updates: http://dontidtheinternet.com</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Richard Barron [ROOT COMMENT]:
+Genuine question for people who keep saying, “it’s already happening” or “it’s too late”…
+Why are you in a group that opposes it?
+If the attitude is that nothing can be done, then all that does is demoralise people who are actually trying to push back, create a paper trail, challenge it legally, contact MPs, raise awareness, and keep pressure on.
+Yes, things are moving fast. Yes, a lot of this is already being pushed through. But “it’s too late” is exactly the mindset they rely on.
+If we oppose it, then oppose it properly. Don’t sit in the room telling everyone to give up before the fight has even started.
+
+2. Together Declaration [REPLY]:
+Richard Barron Yes Richard - what happens next is up to us, 100%
+
+3. Susan Gauci [REPLY]:
+Richard Barron thank you I keep thinking the same people annoy me with it&#x27;s too late to late for what ?? NO TO DIGITAL ID it&#x27;s that simple 🤬
+
+4. Milton Michael [REPLY]:
+Richard Barron they may be shills</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Thread discusses opposing demoralizing attitudes and digital ID, indirectly relevant to open internet policy but no direct stance on net neutrality.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/TogetherDeclaration/posts/pfbid02GTkPZzMDXjmNFMFK9vxUqTrxtDjFUPAg2Tqo48djMCEs3kGpUWWbT92E5bYerwiXl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/TogetherDeclaration/posts/pfbid0Ck5FMhkp98f7sbXFkLK3hQP3YzjPk3BBxg9jPnYzukqyHAdUYicfesJFumbWo2QPl?comment_id=3951175855184663&amp;__cft__[0]=AZYZojQFSfQZ4SNQd0Cz2b2arWjcKRwHtHJTe8PePRYE_3FSVUGhVLh1OcPmlWCpwvLR1ilpUYacfu93uBc1VOuhDn71nc91V0XMou4Ksjtp9sy5fGv-wTMMh7lzSvkjEwC64DWq9NHLhfU4CsXr54oGlALl3_hDVlvj1etxNf0Mag&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#10 · Should college students have easier access to SNAP food assistance?</strong><span><span class="tag warn" title="relevant">相关</span> <span class="tag warn" title="relevant_context_only">仅作相关语境</span></span></div>
+  <div class="sample-meta">thread_id: id:1267787748764588 · post_mid: Facebook:post:pfbid0UUQCWo4dC7jGH9Mt2EZRZKLo9MLPabtzBqYKb9M1qQW46m6i4hKyxwB9eeLRrr6rl · messages: 2 · replies: 1</div>
+  <div class="sample-block"><strong>帖子：</strong>SHOULD THE GOVERNMENT DECIDE WHAT SNAP RECIPIENTS CAN BUY?
+A federal judge has blocked the Trump administration’s effort to restrict SNAP recipients from using food stamp benefits to purchase soda, candy, and other sugary foods and drinks.
+The ruling impacts restricting certain SNAP purchases on July 1, 2026. Judge Amy Berman Jackson ruled that the USDA did not have the legal authority to approve the state waivers used to implement the restrictions.
+Sources: Reuters, Associated Press
+Do you think SNAP benefits should cover sugary foods and drinks, or should there be limits on what can be purchased with taxpayer-funded assistance
+Please follow and share for more updates
+Sound off in the comments.
+#ArkansasNews #SNAP #FoodStamps #Arkansas #BreakingNews #CommunityDiscussion</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Ashley Clairday [ROOT COMMENT]:
+Depends on the state the ruling only affects 5 states.
+U.S. District Judge Amy Berman Jackson wrote in her decision that Agriculture Secretary Brooke Rollins, who oversees the SNAP program, misapplied federal law in approving requests from states to allow them to impose limits on what participants can buy with funds from the food aid program. Her ruling applies to Colorado, Iowa, Nebraska, Tennessee and West Virginia.
+And Arkansas DHS has made a statement about this ruling that it doesn’t affect Arkansas.
+
+2. Sonja Palmore [REPLY]:
+Ashley Clairday 💯💯💯</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Thread discusses the ruling&#x27;s limited scope to five states and mentions Arkansas being unaffected, showing relevance to the topic. No stance is expressed. Sample is relevant but lacks a clear stance.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/sonja.brown.5205/posts/pfbid0UUQCWo4dC7jGH9Mt2EZRZKLo9MLPabtzBqYKb9M1qQW46m6i4hKyxwB9eeLRrr6rl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/sonja.brown.5205/posts/pfbid0U8DEvXpqq4msqgnG5K2wr1LHjtugQ1quQKk8UDKwoimQKRb84YrT8NUeK5D6o1yrl?comment_id=1267787748764588&amp;__cft__[0]=AZaW3ruk_s6sRMEGuGdF7X-LX6Bq1xFOnlfOIZEFB-8VOQrMu4gScwvhQ2waZ4lJ9pCC3SdFyvUiHxxvs17LgkVqlioyjeyAy38ZuiCBGzCJGo8deWfEaxu_sv_D8LGueuwH-5xAoR18MV_6RbeYKnQkeuB3iuyp78osBfXn1rAEKQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#11 · Should medical debt be excluded from personal credit records?</strong><span><span class="tag warn" title="relevant">相关</span> <span class="tag warn" title="relevant_context_only">仅作相关语境</span></span></div>
+  <div class="sample-meta">thread_id: id:865066529956184 · post_mid: Facebook:post:pfbid07v3aVJWM6R4vZQwegvvqvojAZDrCDhjDYRR39AVQMM9yXqXjHeNbMgSFtzqEXU4pl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>No one should have to choose between their health and their financial future. Medical debt can follow families for years, which is why my administration has cancelled $513 million of medical debt for 252,000 residents across the state, providing relief and a worry free path for recovery.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Dan Stickles [ROOT COMMENT]:
+With who&#x27;s money?. Our tax dollars..</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is relevant as it questions the funding source of the policy, but it does not express a clear stance on whether medical debt should be excluded from credit records.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/NedLamontCT/posts/pfbid07v3aVJWM6R4vZQwegvvqvojAZDrCDhjDYRR39AVQMM9yXqXjHeNbMgSFtzqEXU4pl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/NedLamontCT/posts/pfbid02BbTLNrU8QJWUTdYPyDqFMmuQrceLTehLiCqoR4PrCueDazviT4Yar6dzWa5UdZg3l?comment_id=865066529956184&amp;__cft__[0]=AZaFFeJCxKnyFja2rN8J7pGuJQrmpDzWaWKpy2D6L31x6RLvPAo_BbeKb_IsevbX_r_ikyPSQZNjJN4IDGiN7NjSWjDX39DrJFsqWbE7ygWHcRPByQnO-l4KMP77RMT5m30cx9RUci08kHbVjPAvs_-zioJbiD5niBMe0issbcv-iQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample usable">
+  <div class="sample-top"><strong>#12 · Should free school meals be expanded?</strong><span><span class="tag good" title="strongly_relevant">高度相关</span> <span class="tag good" title="core_usable">核心可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1483468796419003 · post_mid: Facebook:post:pfbid0MNThSoUw4XZczTzuv1fbq2znihT2pHnyXKSvqaphamcbgzRjyRsPksXhcWzfT6Vql · messages: 2 · replies: 1</div>
+  <div class="sample-block"><strong>帖子：</strong>Citing improvements in school nutrition over the past 20 years, AAP calls for universal school meals as a strategy to ensure that all children have access to nutritious food.
+Children who eat school meals often show healthier eating patterns, with a neutral or reduced risk of obesity. The AAP encourages pediatricians to advocate and partner with school nutrition proponents through wellness councils, policy advocacy, and support for universal access to healthy meals. Read more about the policy statement: https://bit.ly/4vMrTOk</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Wendy Daniel [ROOT COMMENT]:
+It took Britain’s Jamie Oliver a decade ago to revitalise American school lunches which were appallingly unhealthy.
+They resisted.
+Where was the AAP (American Academy of Paediatrics) then. Did you carry on that spectacular effort.
+
+2. Viv Timms [REPLY]:
+Wendy Daniel Several attempts have been made to improve school lunches here but Republicans, many parents, school boards and agricultural lobbies poo-hooed it. AAP cannot force changes but they have called for improvements for years.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Thread discusses school meals and policy resistance, with explicit stance on improving them. Direct terms &#x27;school lunches&#x27; and &#x27;improve school lunches&#x27; are present.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/AmerAcadPeds/posts/pfbid0MNThSoUw4XZczTzuv1fbq2znihT2pHnyXKSvqaphamcbgzRjyRsPksXhcWzfT6Vql" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/AmerAcadPeds/posts/pfbid02R3sTLMSiNSS19bCRaSL1b9kV6K9Q9rkX8f3s8iQgxXHGdRddBStXkCVBbBGDY68Dl?comment_id=1483468796419003&amp;__cft__[0]=AZY0PDqSLw6uL4-JwTfEVQahKN8mqVJydNTKUm01mxggnnWdli458rRVJmZkpII5F-GzJTfHOBX-R9Oj2bOOVrsHP_C8_CIMHRhxB6zua3mUPzURxC1cL4d_da3Sl5vFTu3HZIZoyc6QlA1lQTPaQbQ1MGEfDJwn9iDHZJ9jH5AFFA&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article></div></section>
+<section><div class="section-head"><div><h2>排除线程固定抽样</h2><p class="hint">从成功但未通过保留规则的线程中固定抽取 8 条。</p></div></div><div class="samples">
+<article class="sample excluded">
+  <div class="sample-top"><strong>#1 · Should the United States adopt stricter regulation and criminal enforcement against fentanyl?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1084922720399178 · post_mid: Facebook:post:pfbid0t7kbpvuia6JRbEdSgUzYrBauVYYiuA32nCouxAFZ1hBEmPrEm1NjTTTjG7SgXzGPl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Six months ago today, President Donald J. Trump signed my bill, the HALT Fentanyl Act, into law, permanently classifying fentanyl-related substances as Schedule I drugs.
+As we continue the fight against the opioid epidemic, this law protects American communities by cracking down on deadly substances and saving lives. It gives us another critical tool to keep dangerous drugs off our streets, and we will continue this fight.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. James Fox [ROOT COMMENT]:
+How about retiring and making room for someone who actually does something.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is a personal attack with no policy attitude on fentanyl regulation.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/boblatta/posts/pfbid0t7kbpvuia6JRbEdSgUzYrBauVYYiuA32nCouxAFZ1hBEmPrEm1NjTTTjG7SgXzGPl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/boblatta/posts/pfbid0tFXAoKF92bL5rA6LwoREgLmdxTUwPRSBxKeWf4vDdac5z9kEGW1of15fBKdDzxTdl?comment_id=1084922720399178&amp;__cft__[0]=AZbM4dZI2jcXEQtKTFCWw5g1ryexQYi_hgU2To6fyYo2rOUpDPaJ6WTAqIIDtkj-Ota-sIm0iwv1Yc4XWjT5-4ceXV23lGHT0wrTr9fMKzIuM_p_0j_rzlr5dnLMKtC3DjnZ_b3EPb5Pu8PkMNkEA6ur1_y3JW9uyCNQZYJFL780cg&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#2 · Should IVF and other assisted-reproduction treatments receive greater public support?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:2829209670780080 · post_mid: Facebook:post:pfbid02WaPT5BqpbCnERsQaV4x5hPn7VT9uUtkwkdjjE7irkNdy821D1LrQ322PjterHVPpl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>The Trump Administration is quietly redefining frozen embryos as “children” in a federal grant program, another step toward fetal personhood that could threaten IVF access and lay the groundwork for a nationwide abortion ban.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Stevan Bell Arte Stojanovic [ROOT COMMENT]:
+Trump wants more children born. Just so he can trafic them</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is off-topic and lacks a stance on IVF or public support for assisted-reproduction treatments.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/CongressmanRaja/posts/pfbid02WaPT5BqpbCnERsQaV4x5hPn7VT9uUtkwkdjjE7irkNdy821D1LrQ322PjterHVPpl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/CongressmanRaja/posts/pfbid0SriJruFRCT1DpFPsRKNGq4LmEXq7ve2PowEuQUbYZKpwkTrpJUJPoqYrCYkoe8xol?comment_id=2829209670780080&amp;__cft__[0]=AZb6kWSAaDRRHvEZTkvCqCX5ZPOPiDc3blCd3ip0cmjh2awNw1l71ee58a320lDvAv02CG11-gyVQyYCl57ys_10N6OXv4uOS26HXq9dC8TCte945D8oNISkYbDISYnvlZt8Vs2q5v0LwmgRbO5Hmu-G1YYDBXrj502PrgLcoeBfyQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#3 · Should the United States expand the supply of affordable housing?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:983031351233613 · post_mid: Facebook:post:pfbid02mGmoJFBtMYa2dVnDqqgNw7srtb2iJRYTgr7XyKAvSX8bFGnnNL2AV1EdaGfCn81Kl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Today, the 21st Century ROAD to Housing Act passed – legislation to rein in corporate landlords that are buying up single-family homes and to remove barriers to housing development.
+This is an important first step, and Congress must continue working to lower the cost of rent and homeownership, including by passing my Housing is a Human Right Act which would invest billions into housing infrastructure and affordable housing.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Sam E. Goodell [ROOT COMMENT]:
+Not to mention the sealer used were not for p9nd or pool applications. It&#x27;s for sealing the outside of underground pipes and tanks.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is off-topic as it discusses a sealer application unrelated to the topic of expanding affordable housing supply.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/RepJayapal/posts/pfbid02mGmoJFBtMYa2dVnDqqgNw7srtb2iJRYTgr7XyKAvSX8bFGnnNL2AV1EdaGfCn81Kl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/RepJayapal/posts/pfbid0hZ6f5xbUxn3JTMtAeqV4AfVBmLj7xu4SU9eGcmHuLrKjnjTaTnb7jmcgoJ5EsC7Nl?comment_id=983031351233613&amp;__cft__[0]=AZZme9yGSOqtXRvmUnGg19PnUxanHWmzyzunRvIn8YWegWBdT_5soGvUCe90QAXoRpWzN0lWAG1UT32DQ_m500Q_ZBZHsCPLe9LVPGQlqEYFSBeLERGsE8jW8QNQk95M06tIgb7Jc5mctliEBgMgfRVWlZchAFDhxc7ogRhpUXn7LA&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#4 · Should platforms be required to remove nonconsensual AI-generated intimate deepfakes?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:4305656849701682 · post_mid: Facebook:post:pfbid0MFueUeCTMs6oCj8XMqAmKtsmrFLNqqFYbZ9CkeZSxcxxCXc4MWtmqicCE83oHNLzl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Yall know revenge porn is a FELONY CRIME that could land yall onna d3ad offender registry list right right ??</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Netra Macc [ROOT COMMENT]:
+By the way yall be posting ts I don’t think yall do !!!</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is off-topic and lacks a stance on the policy question about AI-generated deepfakes.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/netra.macc.2025/posts/pfbid0MFueUeCTMs6oCj8XMqAmKtsmrFLNqqFYbZ9CkeZSxcxxCXc4MWtmqicCE83oHNLzl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/netra.macc.2025/posts/pfbid02RRGvvqjSVUb1spgvaqh6WoJ6aFQhtq4eLrWovEatYBCRYvydKS3XckY6Cd4i8H65l?comment_id=4305656849701682&amp;__cft__[0]=AZa6GBuNonCVS8uIM94AgfB7eu63I_wCtBCm0rp0votrlx1V1nxiL-o-rqQ1zjv-xIgTweAx8JhxZ2xMkKGjh3BbHaKcaE6zddoHR_A5BGME-jl2Z4f-vdBk-zBqLlmnGG53p19-1gFQDUSs3bnmH8VXkM4w6nkSs7fbkhZCMM2MMw&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#5 · Should data brokers be prohibited from selling sensitive personal data?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1352196810152168 · post_mid: Facebook:post:pfbid02me4wWXiqYmjCzWJPv4X6MHGcqmb2FVuSyCoqKPfAW8RZmKGodQWeuspQ3wCNSKs6l · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>The single greatest threat to our national security right now is not unfolding across the ocean but right here in our own backyard. Foreign adversaries are quietly buying up the very soil we rely on to survive. JD Vance is stepping up to stop Beijing from taking over our agricultural supply chain. This is exactly what common sense leadership looks like and it is time we protect the food security of American families.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Danny Hauschild [ROOT COMMENT]:
+TRUE</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is relevant as it affirms the post&#x27;s claim about foreign adversaries acquiring sensitive data, but it lacks a clear stance or reasoning.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid02me4wWXiqYmjCzWJPv4X6MHGcqmb2FVuSyCoqKPfAW8RZmKGodQWeuspQ3wCNSKs6l&amp;id=61556188681835" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/permalink.php?story_fbid=pfbid0hvPoJF8S9tHDwUVyAXybcVQ856FZjPWFb79WC1PTTVFDAHdXGBFYbzfShGyrzgyNl&amp;id=61556188681835&amp;comment_id=1352196810152168&amp;__cft__[0]=AZamsD0BqQVizTL1tAwJYFGICzKt77jWoixGLPHWLNqK5chHyDt91BZZeUvkX5l-udpzvbWK9TRHle7rUblYmTWIlEntC2nWTzmVcAYmwXEmaKptROTdhoXhaf4KRvw9-8lLtlEDLVE-sRLJD979502BSJkYUNJjYkXOKk105fwNQQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#6 · Should medical debt be excluded from personal credit records?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1705359084127040 · post_mid: Facebook:post:pfbid0Af49rPQCoNwZAS2FMHVi6gXgrQvQLUNxZkSToPNodpCMDEHcFUPQDnEYiRkWCCSnl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>I’m proud to have secured House passage of my plan to protect UP families from crushing medical debt. No one should have their financial future derailed by an unexpected medical emergency and this is a big step toward making sure that doesn’t happen.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Patrick Healey [ROOT COMMENT]:
+You’re useless as tits on a bull!!</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>Off-topic insult with no policy attitude or stance.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/StateRepBohnak/posts/pfbid0Af49rPQCoNwZAS2FMHVi6gXgrQvQLUNxZkSToPNodpCMDEHcFUPQDnEYiRkWCCSnl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/StateRepBohnak/posts/pfbid0AnpipmjdFxg7SUG26czCVqYZhz7DPcaU9MPEHCtYgsCXP653Cw76cDjAXKv2QnLYl?comment_id=1705359084127040&amp;__cft__[0]=AZbU1RzHNMugvEJUPQZ_701pVS0FL4VPrQID1uvwRIVVavsIRVODwfjc1307MM-OZjI6XhnEA2LpcjG9MUkB2IkkCx_TX3pe1VQLEEJmRL9lWYK5_3fBUYinSpFmvEIUwwxUCNjGiNcztGwh2siEvsmZ8r54rxVYoDeaOBbHay3jJA&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#7 · Should the federal minimum wage be raised?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:1024501636686567 · post_mid: Facebook:post:pfbid0oeVF3oAkcxeUhSgt3do6FdFBGU3VSsJtu5qyVosbr85nxnY5ksnDg32awax1ju1il · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Federal minimum wage is still just $7.25 an hour. A basic turkey sandwich at Panera costs $10.29. People quickly notice when an hour of work isn&#x27;t enough to pay for lunch while rent, groceries, and other everyday expenses keep rising.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Edward Wright [ROOT COMMENT]:
+Then get a better job..</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The comment is off-topic as it does not address the federal minimum wage policy question and lacks any relevant terms or stance.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid0oeVF3oAkcxeUhSgt3do6FdFBGU3VSsJtu5qyVosbr85nxnY5ksnDg32awax1ju1il&amp;id=61564876299387" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/permalink.php?story_fbid=pfbid02sKtzwM8XvkDroeX5241DW4USfz9k9VKfrih3HnsyBWrUpq1Q7nUM6bqUdx3dBerZl&amp;id=61564876299387&amp;comment_id=1024501636686567&amp;__cft__[0]=AZa_yHtBEDH85sm2Iy-DZFaw0ppNN_97dT0B8BL-xLnq2DOuv9YWCf0lL42lrMHXZIEDqmk3EzF2rvNGbZkuUJqM1Gr_euRUTh2qRfdZ_wmxyykU3pT8_uXTGl2xtakhITMV7Ho0mI9lcmhcJKGdfxEZE0m7gx-LvwCuvOnm8Szilw&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample excluded">
+  <div class="sample-top"><strong>#8 · Should the government subsidize household water-filtration equipment to address PFAS and other contaminants?</strong><span><span class="tag bad" title="off_topic">不相关</span> <span class="tag bad" title="unusable">不可用</span></span></div>
+  <div class="sample-meta">thread_id: id:3971448803158803 · post_mid: Facebook:post:pfbid0gtCr1pAHv6Su1AaAWAmHD8HNiTuL436BWpB1gG6ArAuTwsdAReP3K4XjbgbcnovXl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>NC friends—is anyone else paying attention to the recent news about our drinking water?
+I was looking into the Environmental Working Group (EWG.org) database, and it&#x27;s wild to see the gap between &quot;legal limits&quot; and actual &quot;health guidelines&quot; for things like PFAS and industrial contaminants.
+What’s even crazier is that store-bought bottled water often isn’t any better—a lot of it is just packaged tap water that can leach chemicals and microplastics from the plastic itself.
+Are you guys worried about your tap water quality? I have added the water quality data for several cities and counties below. If yours isnt there and you want me to add it, send me a message and ill add it.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Felicia McCabe [ROOT COMMENT]:
+New Bern, NC
+11 Contaminants Exceed EWG’s Health Guidelines!
+Utility: City of New Bern, NC</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>The thread is off-topic as it only mentions a city and contaminant count without addressing the policy question of government subsidies for water filtration.</div>
+  <div class="sample-links"><a href="https://www.facebook.com/felicia.mccabe.2025/posts/pfbid0gtCr1pAHv6Su1AaAWAmHD8HNiTuL436BWpB1gG6ArAuTwsdAReP3K4XjbgbcnovXl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/felicia.mccabe.2025/posts/pfbid02kZcbuN85E1j4TE8LWMbdFvdsrLerytmT7Wb7ooY4UsdXCX4Lefta6urC4Yhpf3F9l?comment_id=3971448803158803&amp;__cft__[0]=AZaoG9O3W5TZzfiLXNlxO7PfCqs99zbZxIC00KMNYMHdsXtNlvjWN4HLp_mCPuqBbzpRmLY2ANCK0aTPdy_O-kBjcaWzj2f4Ks2ZjS7LpkZ_uABtQGTdblmiMAImK-mOOKY&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article></div></section>
+<section><div class="section-head"><div><h2>未解决线程固定抽样</h2><p class="hint">这些线程保留原始帖子和评论内容，但标注字段为空。</p></div></div><div class="samples">
+<article class="sample unresolved">
+  <div class="sample-top"><strong>#1 · Should transgender athletes be allowed to compete in women&#x27;s sports?</strong><span><span class="tag bad" title="unresolved">未解决</span> <span class="tag bad" title="unresolved">未解决</span></span></div>
+  <div class="sample-meta">thread_id: id:1547413287165111 · post_mid: Facebook:post:pfbid02J7JoXKk1rYJhZJMM8gXRLXpz4BWXw91J65EUgrvLCXQG79WGmdDe2ViDHEn5TxCXl · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>Riley Gaines marked the 54th anniversary of Title IX by criticizing President Donald Trump’s comments about men competing in women’s sports and expressing support for policies she believes protect women’s athletic opportunities.
+Title IX, signed into law in 1972, prohibits sex-based discrimination in education programs and has played a major role in expanding opportunities for women and girls in school sports.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Robert Peterson [ROOT COMMENT]:
+Why do Republicans/Christian Nationalists despise the LGBTQ community so much but tolerate or even support pedophiles, xenophobes, sex traffickers, drug dealers, perpetual liars, Republican Jesus, insurrectionists, misogynistic pussy grabbers, adulterers, financial grifters and even mean-spirited filthy mouthed 34 time convicted felons? I do not get it. Also, please do not insult my intelligence and say &quot;love the sinner, hate the sin&quot; when it comes to LGBTQ Americans. That B.S ship has sailed.
+P.S. How many men are actually playing women&#x27;s sports these days within the United States? Should it be a high priority along with the Iran War, inflation, unemployment, the $40 trillion national debt, the Epstein files release etc.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>该线程尚未得到有效标注。</div>
+  <div class="sample-links"><a href="https://www.facebook.com/meawwcom/posts/pfbid02J7JoXKk1rYJhZJMM8gXRLXpz4BWXw91J65EUgrvLCXQG79WGmdDe2ViDHEn5TxCXl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/meawwcom/posts/pfbid0EPdfK39cTpHrUEQ1W9jVfPQbU8tFqKPM2ufd9Ha9e2WDqvPrGNeywLfZBNSFr9KFl?comment_id=1547413287165111&amp;__cft__[0]=AZZiQ0gG0dsa_yiyv74xJNyas3w7VNhfPkN3d3Um6EDNRqw_to6joPrU8hzK1-lJL3A0PViy3tCZjlNOVoJQt8qXqko3J9gdixYQhnjQedXlCYfV2mDQCHviEHsZmZQNpHbgCtKGkQM3WVK1MiM5CXkCmaqZDmP6udpZLBRQs5lKCg&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample unresolved">
+  <div class="sample-top"><strong>#2 · Should the government protect access to abortion services?</strong><span><span class="tag bad" title="unresolved">未解决</span> <span class="tag bad" title="unresolved">未解决</span></span></div>
+  <div class="sample-meta">thread_id: id:876375598486827 · post_mid: Facebook:post:pfbid02z2ftN5stDZUc46khXiQ5AHehgfv3rCdB8oc33yZ9iFrPKn6YYQZByP8fypkMFFXxl · messages: 3 · replies: 2</div>
+  <div class="sample-block"><strong>帖子：</strong>On the anniversary of Roe v. Wade, we’re reminded that reproductive freedom was the law of the land for nearly 50 years—and that right was taken away.
+I’m proud to cosponsor the Women’s Health Protection Act to restore reproductive rights and ensure these deeply personal health care decisions are made by a woman and her doctor, not politicians.
+I’ll continue to defend reproductive freedom and I’ll fight in Congress to protect women’s rights, access to care, and the medical professionals who provide it.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Raymond Judway [ROOT COMMENT]:
+It was sent back to the states where it belonged. Total misrepresentation Congressman John W. Mannion, what exactly has changed in NY since the ruling?
+
+2. Gretchen Heister [REPLY]:
+Raymond Judway and what has changed in OTHER states? Which men&#x27;s rights vary by state, sir? (None of them) Why should a woman&#x27;s rights change when she crosses an imaginary and arbitrary line? Why should a woman&#x27;s right to travel be restricted if she&#x27;s pregnant?!
+
+3. Raymond Judway [REPLY]:
+Gretchen Heister the constitution covers federal authority, anything not in the constitution is reserved for the states. That’s the way the law works, it doesn’t change because you’re emotionally invested in something.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>该线程尚未得到有效标注。</div>
+  <div class="sample-links"><a href="https://www.facebook.com/CongressmanJohnMannion/posts/pfbid02z2ftN5stDZUc46khXiQ5AHehgfv3rCdB8oc33yZ9iFrPKn6YYQZByP8fypkMFFXxl" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/CongressmanJohnMannion/posts/pfbid0vJzk9oHUpr1ssBgUswKLFdcpDitPDHo1bX2droUKa3dVFZmkXEbni441igCSdjpcl?comment_id=876375598486827&amp;__cft__[0]=AZaiF4roaDqTauz1HmOqbWeFs2ZbHAbt3lH_Q_Jh8EzjvO2a3BTA_p16LChmTjGrXU0m-xO7arTzyTU2FrVDXbFg5GHmgmPl19MlTjspX4ugNfgTIe54k2x6-5LYD_0GLcqe3xAqdgFxtrGu86FTCm7DIPO3tYzcJrm7nWuJRdKuQQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample unresolved">
+  <div class="sample-top"><strong>#3 · Should data brokers be prohibited from selling sensitive personal data?</strong><span><span class="tag bad" title="unresolved">未解决</span> <span class="tag bad" title="unresolved">未解决</span></span></div>
+  <div class="sample-meta">thread_id: id:1747805516663456 · post_mid: Facebook:post:pfbid02me4wWXiqYmjCzWJPv4X6MHGcqmb2FVuSyCoqKPfAW8RZmKGodQWeuspQ3wCNSKs6l · messages: 1 · replies: 0</div>
+  <div class="sample-block"><strong>帖子：</strong>The single greatest threat to our national security right now is not unfolding across the ocean but right here in our own backyard. Foreign adversaries are quietly buying up the very soil we rely on to survive. JD Vance is stepping up to stop Beijing from taking over our agricultural supply chain. This is exactly what common sense leadership looks like and it is time we protect the food security of American families.</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Barb Smith [ROOT COMMENT]:
+Yes with urgency</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>该线程尚未得到有效标注。</div>
+  <div class="sample-links"><a href="https://www.facebook.com/permalink.php?story_fbid=pfbid02me4wWXiqYmjCzWJPv4X6MHGcqmb2FVuSyCoqKPfAW8RZmKGodQWeuspQ3wCNSKs6l&amp;id=61556188681835" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/permalink.php?story_fbid=pfbid0hvPoJF8S9tHDwUVyAXybcVQ856FZjPWFb79WC1PTTVFDAHdXGBFYbzfShGyrzgyNl&amp;id=61556188681835&amp;comment_id=1747805516663456&amp;__cft__[0]=AZamsD0BqQVizTL1tAwJYFGICzKt77jWoixGLPHWLNqK5chHyDt91BZZeUvkX5l-udpzvbWK9TRHle7rUblYmTWIlEntC2nWTzmVcAYmwXEmaKptROTdhoXhaf4KRvw9-8lLtlEDLVE-sRLJD979502BSJkYUNJjYkXOKk105fwNQQ&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article>
+<article class="sample unresolved">
+  <div class="sample-top"><strong>#4 · Should free school meals be expanded?</strong><span><span class="tag bad" title="unresolved">未解决</span> <span class="tag bad" title="unresolved">未解决</span></span></div>
+  <div class="sample-meta">thread_id: id:2522117548247195 · post_mid: Facebook:post:pfbid0MNThSoUw4XZczTzuv1fbq2znihT2pHnyXKSvqaphamcbgzRjyRsPksXhcWzfT6Vql · messages: 5 · replies: 4</div>
+  <div class="sample-block"><strong>帖子：</strong>Citing improvements in school nutrition over the past 20 years, AAP calls for universal school meals as a strategy to ensure that all children have access to nutritious food.
+Children who eat school meals often show healthier eating patterns, with a neutral or reduced risk of obesity. The AAP encourages pediatricians to advocate and partner with school nutrition proponents through wellness councils, policy advocacy, and support for universal access to healthy meals. Read more about the policy statement: https://bit.ly/4vMrTOk</div>
+  <div class="sample-block conversation"><strong>评论线程：</strong>1. Hallie Mac [ROOT COMMENT]:
+I wish the foods offered at nearby school districts were actually nutritious though. Obviously fed is best but would we say that Lucky Charms and Coco Puffs for breakfast are healthy options?
+
+2. Julia Greer [REPLY]:
+Hallie Mac Exactly. The AAP would do well to *partner* with RFK rather than alienate him. I was appalled when I reviewed my children&#x27;s public school lunches which were basically ultra-processed chicken nuggets, hot dogs, and pizza on rotation, ad nauseum.
+
+3. Julia Greer [REPLY]:
+Viv Timms Fair enough, but if they wish to be perceived as objective, they need to decline all future donations from vaccine makers.
+
+4. Viv Timms [REPLY]:
+Julia Greer they are non-political. They don&#x27;t partner with any one in any partner.
+
+5. Viv Timms [REPLY]:
+Julia Greer AAP receives a minor fraction of its funding from vaccine manufacturers through corporate sponsorships, educational grants, and advertising at medical conferences. It is governed by strict protocols to prevent conflicts of interest. The problem is you lay people know nothing about the strict protocols surrounding donations.</div>
+  <div class="sample-block reason"><strong>模型理由：</strong>该线程尚未得到有效标注。</div>
+  <div class="sample-links"><a href="https://www.facebook.com/AmerAcadPeds/posts/pfbid0MNThSoUw4XZczTzuv1fbq2znihT2pHnyXKSvqaphamcbgzRjyRsPksXhcWzfT6Vql" target="_blank" rel="noopener noreferrer">原始帖子</a> · <a href="https://www.facebook.com/AmerAcadPeds/posts/pfbid02R3sTLMSiNSS19bCRaSL1b9kV6K9Q9rkX8f3s8iQgxXHGdRddBStXkCVBbBGDY68Dl?comment_id=2522117548247195&amp;__cft__[0]=AZY0PDqSLw6uL4-JwTfEVQahKN8mqVJydNTKUm01mxggnnWdli458rRVJmZkpII5F-GzJTfHOBX-R9Oj2bOOVrsHP_C8_CIMHRhxB6zua3mUPzURxC1cL4d_da3Sl5vFTu3HZIZoyc6QlA1lQTPaQbQ1MGEfDJwn9iDHZJ9jH5AFFA&amp;__tn__=R]-R" target="_blank" rel="noopener noreferrer">根评论</a></div>
+</article></div></section>
+
+<section class="footer">报告由 <code>scripts/generate_facebook_comment_report.py</code> 生成。源数据：<code>D:\social_network\benchmark\data_clean\facebook_qwen32b_annotation\output\qwen32b_8gpu\results\facebook_comments_annotation_review_three_fields.xlsx</code>；错误：<code>D:\social_network\benchmark\data_clean\facebook_qwen32b_annotation\output\qwen32b_8gpu\results\errors.csv</code>；下游评论者：<code>D:\social_network\benchmark\data_clean\facebook_qwen32b_annotation\output\qwen32b_8gpu\results\facebook_selected_commenters_for_crawl.csv</code>。</section>
+</main>
+</body>
+</html>

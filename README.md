@@ -1,134 +1,34 @@
-# Server LLM Post Filter
+# Social Media Data Cleaning
 
-这是 posts-only 社交媒体数据的第二阶段 LLM 筛选项目。当前版本默认把 8 张卡拆成两套 TP4 vLLM 副本：GPU 0-3 使用端口 8000，GPU 4-7 使用端口 8001；默认模型路径是 `../models/Qwen3-32B`。
-
-服务器目录结构应为：
+本仓库按处理流程分为三个独立目录。脚本、输入、运行状态和输出均保存在对应流程内部，避免不同平台文件混放。
 
 ```text
-workspace/
-├── data_clean/
-└── models/
-    └── Qwen3-32B/
-        ├── config.json
-        ├── tokenizer.json
-        ├── model-*.safetensors
-        └── ...
+data_clean/
+├─ README.md
+├─ docs/
+│  └─ DATA_DIRECTORY_GUIDE.md
+└─ pipelines/
+   ├─ post_filter/                 # 多平台帖子/视频相关性筛选
+   ├─ facebook_comments/           # Facebook 评论相关性与训练价值标注
+   └─ other_platform_comments/     # Instagram/YouTube 评论匹配与标准化
 ```
 
-筛选目标：
+## 直接查看
 
-1. 判断帖子是否真正贴近指定 topic，而不是只命中关键词。
-2. 判断帖子是否带有立场。
-3. 判断帖子是否有中高讨论潜力。
+| 目的 | 位置 |
+|---|---|
+| 最终保留的帖子/视频 | `pipelines/post_filter/output/qwen32b_8gpu/merged/llm_post_relevance_filtered.csv` |
+| 帖子筛选报告 | `pipelines/post_filter/output/qwen32b_8gpu/merged/llm_summary_report.html` |
+| Facebook 评论最终工作簿 | `pipelines/facebook_comments/output/qwen32b_8gpu_v4_legacy_error_repair/final/facebook_comments_comprehensive_annotated.xlsx` |
+| Facebook 评论审查报告 | `pipelines/facebook_comments/output/qwen32b_8gpu_v4_legacy_error_repair/results/facebook_comment_summary_report.html` |
+| Facebook 评论者后续爬取名单 | `pipelines/facebook_comments/output/qwen32b_8gpu_v4_legacy_error_repair/results/facebook_selected_commenters_for_crawl.csv` |
+| Instagram/YouTube 待标注评论 | `pipelines/other_platform_comments/output/matched_comments_for_annotation.csv` |
 
-最终保留规则：
+完整目录说明、运行入口和中间文件用途见 [数据目录导航](docs/DATA_DIRECTORY_GUIDE.md)。各流程的具体运行方法见其目录内的 `README.md` 和 `COMMANDS.md`。
 
-```text
-topic_relevance in strongly_relevant / relevant
-AND has_stance = true
-AND discussion_potential in high / medium
-```
+## 运行约定
 
-## 文件说明
-
-- `llm_post_filter.py`：唯一 Python 主程序，负责动态并发推理、失败重试、结果续跑与汇总。
-- `input/post_relevance_filtered.csv`：规则筛选后的 posts-only 输入数据。
-- `scripts/start_vllm_8gpu_qwen32b.sh`：默认启动 2 个 TP4 vLLM 服务，GPU `0-3` 使用端口 `8000`，GPU `4-7` 使用端口 `8001`。
-- `scripts/run_sample_8gpu_vllm.sh`：小样本动态并发试跑。
-- `scripts/run_full_8gpu_vllm.sh`：正式全量动态并发运行。
-- `scripts/stop_vllm_8gpu.sh`：停止已启动的 vLLM 服务。
-- `COMMANDS.md`：可直接复制使用的命令。
-
-## 运行方式
-
-进入项目目录：
-
-```bash
-cd data_clean
-```
-
-启动两套 TP4 vLLM 服务：
-
-```bash
-bash scripts/stop_vllm_8gpu.sh
-bash scripts/start_vllm_8gpu_qwen32b.sh
-```
-
-第一次从旧的单 TP4 配置切换到当前双 TP4 配置时，必须先停止旧服务，避免端口 `8000` 或 GPU `4-7` 被占用。
-
-两份 32B 权重默认按顺序加载：8000 就绪后才会开始加载 8001，以降低主机内存峰值。若确认服务器 RAM 充足，可用 `START_SEQUENTIALLY=0` 改回并行加载。
-
-启动脚本会先对每个 GPU 组运行一次轻量 CUDA 预检。若出现 `error 802: system not yet initialized`，这是驱动/Fabric 初始化问题，不是模型或筛选代码问题；先修复服务器 GPU 状态再启动。
-
-另开一个终端，先小样本试跑：
-
-```bash
-bash scripts/run_sample_8gpu_vllm.sh
-```
-
-正式全量运行：
-
-```bash
-bash scripts/run_full_8gpu_vllm.sh
-```
-
-运行过程中主终端会定时显示总进度：
-
-```text
-2026-07-08 12:00:00 progress: success 1250/29019 (4%), attempted: 1260, errors: 10, worker pool: 24 across 2 endpoints
-```
-
-默认每 15 秒刷新一次，可以用 `PROGRESS_INTERVAL` 调整：
-
-```bash
-PROGRESS_INTERVAL=10 bash scripts/run_full_8gpu_vllm.sh
-```
-
-停止 vLLM 服务：
-
-```bash
-bash scripts/stop_vllm_8gpu.sh
-```
-
-## 输出文件
-
-最终合并结果会写到：
-
-```text
-output/qwen32b_8gpu/merged/
-```
-
-核心结果文件：
-
-```text
-output/qwen32b_8gpu/merged/llm_post_relevance_filtered.csv
-```
-
-合并目录包括：
-
-- `llm_post_relevance_pairs.jsonl`
-- `llm_post_relevance_pairs.csv`
-- `llm_post_relevance_filtered.csv`
-- `llm_post_relevance_removed.csv`
-- `llm_post_relevance_review.csv`
-- `llm_post_relevance_errors.csv`
-- `llm_platform_summary.csv`
-- `llm_topic_summary.csv`
-- `llm_run_summary.json`
-- `llm_merge_summary.json`
-
-`llm_run_summary.json` 会写出 `success_rows`、`error_rows`、`error_rate` 和 `error_counts`。
-
-所有运行脚本都启用了 `--resume`，中断后可以直接重新运行对应命令续跑。正式运行首次会导入旧 `shard_*` 目录的结果，之后以 `output/qwen32b_8gpu/dynamic/` 作为续跑状态；成功行会跳过，`llm_error` 行会重试。
-
-运行脚本会在开始前检查默认 endpoints `8000` 和 `8001` 的 `/v1/models` 是否可用。如果任一 vLLM 服务未就绪，脚本会直接退出，不会把整批请求写成失败结果。即使仍有错误行，脚本也会先把最新结果发布到 `merged/`；下一次运行会继续重试。若需要把残留错误当作命令失败，可设置 `FAIL_ON_ERRORS=1`。
-
-默认运行一个 24 路请求的共享 worker 池，持续从同一任务队列领取工作，并按两个 vLLM 服务当前 in-flight 请求数自动均衡。这样两套 TP4 模型可同时推理，先完成的任务也不会造成剩余任务近乎停滞。Qwen3 的 thinking 模式默认开启；单条帖子截断为 2500 字符，输出上限为 1024 tokens。若服务器把 thinking 内容内联在响应中，程序会在解析最终 JSON 前剥离 `<think>...</think>` 段。
-
-可按显存和吞吐调整并发，例如：
-
-```bash
-WORKERS=32 bash scripts/run_full_8gpu_vllm.sh
-```
-
-如果出现明显的排队超时或显存压力，先降到 `WORKERS=16`。每个 vLLM 副本默认允许 32 个并发序列，可用 `MAX_NUM_SEQS` 在启动服务时调整。
+- 必须先进入对应的流程目录，再运行该目录下的脚本。
+- 三个流程都只读取外部原始数据，不覆盖原始文件。
+- `output/` 中的历史运行目录保留用于审计和断点续跑；不要仅凭目录名判断最新结果，应按导航中标注的“当前结果”路径查看。
+- 服务器模型默认位于 `benchmark/models/Qwen3-32B`。帖子和 Facebook 评论流程的相对模型路径已按新结构更新。

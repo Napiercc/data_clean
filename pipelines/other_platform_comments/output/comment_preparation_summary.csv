@@ -1,0 +1,5 @@
+﻿platform,retained_post_topic_pairs,retained_unique_posts,raw_comment_rows,raw_nonempty_comment_rows,raw_empty_comment_rows,clean_comment_rows,matched_unique_posts,matched_unique_comments,annotation_rows,unmatched_clean_comments,post_coverage_percent,clean_comment_match_percent,comments_with_parent_comment_id,relation_methods
+Instagram,727,727,4933,4902,31,4728,226,1215,1215,3513,31.0867,25.698,0,"r_url:1,215"
+Reddit,36,36,17137,0,17137,0,0,0,0,0,0.0,0.0,0,
+X,4400,4367,0,0,0,0,0,0,0,0,0.0,0.0,0,
+YouTube,6292,6286,250202,250192,10,213444,3502,44978,45007,168466,55.7111,21.0725,0,"r_native:44,978"

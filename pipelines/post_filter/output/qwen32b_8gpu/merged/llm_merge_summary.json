@@ -1,0 +1,7 @@
+{
+  "merged_rows": 29019,
+  "input_files": [
+    "output/qwen32b_8gpu/dynamic/llm_post_relevance_pairs.jsonl"
+  ],
+  "merged_at": "2026-07-14T14:47:01"
+}

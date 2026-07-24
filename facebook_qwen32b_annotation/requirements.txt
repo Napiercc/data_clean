@@ -1,3 +1,0 @@
-# Client-side workbook loading and independent result export.
-# Install vLLM, PyTorch, and CUDA separately for the H20 server; this file does not replace them.
-openpyxl==3.1.5

@@ -1,7 +1,26 @@
 ﻿__pycache__/
-*.pyc
-output/qwen32b_8gpu/logs/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.pytest_cache/
+.coverage
 *.log
 .env
 logs/
 run/
+
+# Facebook annotation keeps reviewable results, final workbooks, and reports.
+# Only reproducible runtime state and local validation runs are ignored.
+pipelines/facebook_comments/output/**/logs/
+pipelines/facebook_comments/output/**/run/
+pipelines/facebook_comments/output/**/state/
+pipelines/facebook_comments/output/**/audit/
+pipelines/facebook_comments/output/**/*.sqlite
+pipelines/facebook_comments/output/**/*.sqlite-shm
+pipelines/facebook_comments/output/**/*.sqlite-wal
+pipelines/facebook_comments/output/input_validation*/
+pipelines/facebook_comments/output/legacy_repair_validation*/
+
+!pipelines/facebook_comments/output/.gitkeep
+pipelines/other_platform_comments/output/*.jsonl
+pipelines/other_platform_comments/output/*.csv
